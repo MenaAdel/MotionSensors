@@ -87,32 +87,32 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         // accelerometer
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         accelerometer?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+            sensorManager.registerListener(this, it, 10000)
         } ?: Log.d(TAG, "accelerometer not supported")
 
         //gyroscope
         gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
         gyroscope?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+            sensorManager.registerListener(this, it, 10000)
         } ?: Log.d(TAG, "gyroscope not supported")
 
         //magnetometer
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
         magnetometer?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+            sensorManager.registerListener(this, it, 10000)
         } ?: Log.d(TAG, "magnetometer not supported")
 
         //accelerometerUncalibrated
         accelerometerUncalibrated =
             sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER_UNCALIBRATED)
         accelerometerUncalibrated?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+            sensorManager.registerListener(this, it, 10000)
         } ?: Log.d(TAG, "accelerometerUncalibrated not supported")
 
         //rotation
         rotation = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
         rotation?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+            sensorManager.registerListener(this, it, 10000)
         } ?: Log.d(TAG, "rotation not supported")
     }
 
@@ -219,10 +219,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             accelerometer = accelerometerArray
             gyroscope = gyroscopeArray
             magnetometer = magnetometerArray
-            deviceMotion = deviceMotionArray
+            deviceMotion     = deviceMotionArray
         }
         val jsonData = Gson().toJson(sensorData)
-        // Log.d("json data is: ", jsonData)
+        Log.d("SENSOOR: ", jsonData)
     }
 
     private fun getDeviceOrientation(): Int {
@@ -236,9 +236,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
         Log.d(TAG, "finger area is ${event?.size}")
         Log.d(TAG, "pressure is ${event?.pressure}")
-        for (i in 0 until (event?.pointerCount ?: 0)){
-            Log.d(TAG, "size of pointerCount $i is ${event?.getSize(i)}")
-        }
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
                 startX = event.x
