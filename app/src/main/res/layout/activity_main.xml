@@ -6,16 +6,52 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".MainActivity">
 
+    <Button
+        android:id="@+id/start_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/start"
+        android:layout_margin="20dp"
+        android:background="#FFBB86FC"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        />
+
+    <TextView
+        android:id="@+id/counter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="1"
+        android:padding="5dp"
+        android:textColor="#FFBB86FC"
+        android:layout_margin="5dp"
+        app:layout_constraintStart_toEndOf="@id/start_btn"
+        app:layout_constraintEnd_toStartOf="@id/end_btn"
+        app:layout_constraintTop_toTopOf="@id/start_btn"
+        app:layout_constraintBottom_toBottomOf="@id/start_btn"/>
+
+    <Button
+        android:id="@+id/end_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/end"
+        android:layout_margin="20dp"
+        android:background="#FFBB86FC"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerview"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+
         tools:itemCount="5"
         android:layout_marginTop="50dp"
         tools:listitem="@layout/card_view_design"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/start_btn"
         app:layout_constraintBottom_toBottomOf="parent"
         />
 

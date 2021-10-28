@@ -25,7 +25,7 @@ val retrofit by lazy {
     Retrofit.Builder()
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
-        .baseUrl("")
+        .baseUrl("http://stgavailo-behavior.t2.sa/")
         .build()
 }
 

@@ -11,6 +11,9 @@ import java.util.*
 import android.util.TypedValue
 
 import android.util.DisplayMetrics
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -51,4 +54,8 @@ fun Context.getScreenDiameter(): Double {
     val x = width.toDouble().pow(2.0)
     val y = height.toDouble().pow(2.0)
     return sqrt(x + y)
+}
+
+fun systemSecondTime(): Long {
+    return System.currentTimeMillis()
 }

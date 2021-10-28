@@ -3,8 +3,12 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/Mena Adel/AndroidStudioProjects/Motionsensors/app/src/main/res/layout/activity_input.xml" value="0.17395833333333333" />
         <entry key="..\:/Users/Mena Adel/AndroidStudioProjects/Motionsensors/app/src/main/res/layout/activity_main.xml" value="0.18802083333333333" />
         <entry key="..\:/Users/Mena Adel/AndroidStudioProjects/Motionsensors/app/src/main/res/layout/card_view_design.xml" value="0.18802083333333333" />
+        <entry key="..\:/Users/Mena Adel/AndroidStudioProjects/Motionsensors/app/src/main/res/layout/fragment_input.xml" value="0.25" />
+        <entry key="..\:/Users/Mena Adel/AndroidStudioProjects/Motionsensors/app/src/main/res/layout/fragment_list.xml" value="0.18802083333333333" />
+        <entry key="..\:/Users/Mena Adel/AndroidStudioProjects/Motionsensors/app/src/main/res/menu/bottom_menu.xml" value="0.18512820512820513" />
       </map>
     </option>
   </component>

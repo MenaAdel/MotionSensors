@@ -8,16 +8,27 @@ import android.hardware.SensorManager
 import android.icu.text.SimpleDateFormat
 import android.os.Build
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.util.Log
 import android.view.MotionEvent
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.findNavController
+import androidx.navigation.ui.setupWithNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.t2.motionsensors.databinding.ActivityMainBinding
+import com.t2.motionsensors.domain.datasource.storage.writeToFile
 import com.t2.motionsensors.domain.entity.*
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.math.abs
@@ -25,14 +36,16 @@ import kotlin.math.abs
 @RequiresApi(Build.VERSION_CODES.N)
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
+    private lateinit var viewModel: MainViewModel
     private lateinit var binding: ActivityMainBinding
-
+    val sensorLiveData: MutableLiveData<SensorEvent> = MutableLiveData()
+    val gravity: FloatArray = FloatArray(3)
     private var accelerometer: Sensor? = null
     private var accelerometerUncalibrated: Sensor? = null
     private var gyroscope: Sensor? = null
     private var magnetometer: Sensor? = null
     private var rotation: Sensor? = null
-    private val sensorData = SensorBody()
+    private var sensorData = FileData()
     private val accelerometerArray = mutableListOf<Coordinates>()
     private val gyroscopeArray = mutableListOf<Coordinates>()
     private val magnetometerArray = mutableListOf<Coordinates>()
@@ -57,15 +70,91 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             Locale.getDefault())
     }
     private var isActionMove = false
+    private var timer: CountDownTimer? = null
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        initRecycler()
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         setupSensors()
+        initRecycler()
         touchBody = TouchBody(user_id = "test", swipe = swipe, tap = tap)
+
+        sensorLiveData.observe(this, {
+            when (it.sensor.type) {
+                Sensor.TYPE_LINEAR_ACCELERATION -> {
+                    deviceMotionObject.acceleration = CoordinatesDevice(
+                        x = it.values?.get(0),
+                        y = it.values?.get(1),
+                        z = it.values?.get(2)
+                    )
+                }
+                Sensor.TYPE_ROTATION_VECTOR -> {
+                    deviceMotionObject.apply {
+                        rotation = Rotation(
+                            alpha = it.values?.get(0),
+                            beta = it.values?.get(1),
+                            gamma = it.values?.get(2)
+                        )
+                        time = dateFormat.format(Date())
+                        orientation = getDeviceOrientation()
+                    }
+                }
+                Sensor.TYPE_ACCELEROMETER -> {
+                    val alpha = 0.8f;
+
+                    gravity[0] = alpha * gravity[0] + (1 - alpha) * it.values[0]
+                    gravity[1] = alpha * gravity[1] + (1 - alpha) * it.values[1]
+                    gravity[2] = alpha * gravity[2] + (1 - alpha) * it.values[2]
+
+                    deviceMotionObject.apply {
+                        accelerationIncludingGravity = CoordinatesDevice(
+                            x = it.values?.get(0),
+                            y = it.values?.get(1),
+                            z = it.values?.get(2)
+                        )
+                        acceleration = CoordinatesDevice(
+                            x = it.values[0] - gravity[0],
+                            y = it.values[1] - gravity[1],
+                            z = it.values[2] - gravity[2]
+                        )
+                    }
+                }
+            }
+        })
+        setupClicking()
+    }
+
+    private fun setupClicking() {
+        with(binding){
+            startBtn.setOnClickListener {
+                counterTicker()
+            }
+            endBtn.setOnClickListener {
+                stopCounter()
+            }
+        }
+    }
+
+    private fun counterTicker() {
+        // Create the timer flow
+        sensorData = FileData()
+        var counter = 0
+        timer = object: CountDownTimer(Long.MAX_VALUE, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                binding.counter.text = "${counter++}"
+            }
+
+            override fun onFinish() {}
+        }
+        timer?.start()
+    }
+
+    private fun stopCounter(){
+        timer?.cancel()
+        lifecycleScope.launch { fillSensorData() }
     }
 
     private fun initRecycler() {
@@ -75,7 +164,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             data.add(ItemsViewModel(R.drawable.ic_launcher_background, "Item $i"))
         }
         with(binding.recyclerview) {
-            layoutManager = LinearLayoutManager(this@MainActivity)
+            layoutManager = LinearLayoutManager(context)
             adapter = CustomAdapter(data)
         }
     }
@@ -123,6 +212,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     @RequiresApi(Build.VERSION_CODES.N)
     override fun onSensorChanged(event: SensorEvent?) {
         Log.d(TAG, "sensor type is: ${event?.sensor?.type}")
+
         when (event?.sensor?.type) {
             Sensor.TYPE_ACCELEROMETER -> {
                 accelerometerArray.add(
@@ -133,15 +223,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         time = dateFormat.format(Date())
                     )
                 )
-                deviceMotionObject.apply {
-                    accelerationIncludingGravity = CoordinatesDevice(
-                        x = event.values?.get(0),
-                        y = event.values?.get(1),
-                        z = event.values?.get(2)
-                    )
-                    orientation = getDeviceOrientation()
-
-                }
+                sensorLiveData.postValue(event)
                 Log.d(
                     TAG,
                     "onSensorChanged x: ${event.values?.get(0)} y: ${event.values?.get(1)} z: ${
@@ -182,47 +264,38 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     }"
                 )
             }
-            Sensor.TYPE_ACCELEROMETER_UNCALIBRATED -> {
-                deviceMotionObject.acceleration = CoordinatesDevice(
-                    x = event.values?.get(0),
-                    y = event.values?.get(1),
-                    z = event.values?.get(2)
-                )
+            Sensor.TYPE_LINEAR_ACCELERATION -> {
+                sensorLiveData.setValue(event)
             }
             Sensor.TYPE_ROTATION_VECTOR -> {
-                deviceMotionObject.apply {
-                    rotation = Rotation(
-                        alpha = event.values?.get(0),
-                        beta = event.values?.get(1),
-                        gamma = event.values?.get(2)
-                    )
-                    time = dateFormat.format(Date())
-                }
+                sensorLiveData.setValue(event)
             }
             else -> {
             }
         }
-
-        lifecycleScope.launch { fillSensorData() }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
     }
 
     private suspend fun fillSensorData() {
-        delay(10000)
-        deviceMotionArray.add(index, deviceMotionObject)
-        deviceMotionObject = DeviceMotion()
-        index++
-        delay(60000)
+        Log.d("fillS", "${deviceMotionObject.isNotEmpty()}")
+        if (deviceMotionObject.isNotEmpty()) {
+            deviceMotionArray.add(index, deviceMotionObject)
+            deviceMotionObject = DeviceMotion()
+            index++
+        }
+
         sensorData.apply {
             accelerometer = accelerometerArray
             gyroscope = gyroscopeArray
             magnetometer = magnetometerArray
-            deviceMotion     = deviceMotionArray
+            deviceMotion = deviceMotionArray
         }
         val jsonData = Gson().toJson(sensorData)
+        viewModel.addSensorData(this ,jsonData)
         Log.d("SENSOOR: ", jsonData)
+        sensorData = FileData()
     }
 
     private fun getDeviceOrientation(): Int {
@@ -251,10 +324,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             MotionEvent.ACTION_UP -> {
                 onEventUp(event)
             }
-            else -> {
-            }
         }
-        return true
+        return super.dispatchTouchEvent(event)
     }
 
     private fun onEventUp(event: MotionEvent) {
@@ -279,10 +350,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             time = endTime - startTime)
 
         if (isActionMove) {
-            touchData.add(data)
+            touchSwipeData.add(data)
             fillTouchSwipe()
         } else {
-            touchSwipeData.add(data)
+            touchData.add(data)
             fillTouchData()
         }
         isActionMove = false
@@ -296,7 +367,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             phone_orientation = getDeviceOrientation())
         tap.add(movement)
         val jsonData = Gson().toJson(touchBody)
-        Log.d("json touch body is: ", jsonData)
+        Log.d("jsonto ", jsonData)
     }
 
     private fun fillTouchSwipe() {

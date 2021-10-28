@@ -5,6 +5,7 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import androidx.annotation.RequiresApi
+import com.google.gson.Gson
 import com.t2.motionsensors.domain.entity.DeviceDetails
 import com.t2.motionsensors.domain.entity.ScreenSpecs
 import java.security.AccessController.getContext
@@ -17,7 +18,8 @@ class AppController : Application() {
         val deviceDetails = DeviceDetails(
             timeStamp = System.currentTimeMillis(),
             deviceId = getDeviceIMEI(),
-            userId = "", phoneOs = Build.VERSION.SDK_INT.toString(),
+            userId = "",
+            phoneOs = "android API ${Build.VERSION.SDK_INT}",
             deviceType = getDeviceName(),
             screenSpecs = ScreenSpecs(
                 safeAreaPaddingBottom = 0,
@@ -27,6 +29,9 @@ class AppController : Application() {
                 diameter = getScreenDiameter()
             )
         )
+
+        val jsonData = Gson().toJson(deviceDetails)
+        Log.d("deviceData ", jsonData)
 
         Log.d("Application", "$deviceDetails")
     }
