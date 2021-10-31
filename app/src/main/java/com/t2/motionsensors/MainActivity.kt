@@ -293,7 +293,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             deviceMotion = deviceMotionArray
         }
         val jsonData = Gson().toJson(sensorData)
+        val jsonTouchData = Gson().toJson(touchBody)
         viewModel.addSensorData(this ,jsonData)
+        viewModel.addTouchData(this ,jsonTouchData)
         Log.d("SENSOOR: ", jsonData)
         sensorData = FileData()
     }

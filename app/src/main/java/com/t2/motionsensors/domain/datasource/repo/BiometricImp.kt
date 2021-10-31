@@ -17,8 +17,18 @@ class BiometricImp(private val apiService: ApiService = buildApi()) : IBiometric
         return apiService.addSensorValues(userId = body.user_id.toRequestBody("text/plain".toMediaType()),
             file = MultipartBody.Part.createFormData(
                 "file",
-                "file",
+                file.name,
                 file.asRequestBody("application/json".toMediaType())
             ))
+    }
+
+    override suspend fun addTouchData(user_id: String, file: File ,type: String): ApiResponse {
+        return apiService.addSensorValues(userId = user_id.toRequestBody("text/plain".toMediaType()),
+            file = MultipartBody.Part.createFormData(
+                "file",
+                file.name,
+                file.asRequestBody("application/json".toMediaType())
+            ),
+            type = type)
     }
 }

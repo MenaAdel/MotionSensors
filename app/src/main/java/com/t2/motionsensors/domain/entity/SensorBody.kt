@@ -9,6 +9,7 @@ data class SensorBody(
 )
 
 data class FileData(
+    var user_id: String = "${systemSecondTime()}",
     var accelerometer: List<Coordinates>? = null,
     var gyroscope: List<Coordinates>? = null,
     var magnetometer: List<Coordinates>? = null,

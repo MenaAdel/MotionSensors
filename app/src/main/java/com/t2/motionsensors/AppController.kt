@@ -5,12 +5,15 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.lifecycle.ViewModelProvider
 import com.google.gson.Gson
 import com.t2.motionsensors.domain.entity.DeviceDetails
 import com.t2.motionsensors.domain.entity.ScreenSpecs
 import java.security.AccessController.getContext
 
 class AppController : Application() {
+
+    private lateinit var viewModel: MainViewModel
 
     override fun onCreate() {
         super.onCreate()
