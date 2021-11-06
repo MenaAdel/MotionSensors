@@ -22,3 +22,17 @@ fun Context.writeToFile(data: String? ,name: String): String? {
     }
 }
 
+fun Context.writeToFileOnDisk(data: String? ,name: String) {
+    try {
+        val rootFolder = getExternalFilesDir(null)
+        val file = File(rootFolder ,name)
+        val writer = FileWriter(file)
+        writer.write(data)
+        writer.close()
+        Log.e("filePath", file.absolutePath)
+    } catch (e: IOException) {
+        Log.e("Exception", "File write failed: $e")
+
+    }
+}
+

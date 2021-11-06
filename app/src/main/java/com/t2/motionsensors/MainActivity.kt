@@ -13,22 +13,14 @@ import android.util.Log
 import android.view.MotionEvent
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.findNavController
-import androidx.navigation.ui.setupWithNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.t2.motionsensors.databinding.ActivityMainBinding
-import com.t2.motionsensors.domain.datasource.storage.writeToFile
+import com.t2.motionsensors.domain.datasource.storage.writeToFileOnDisk
 import com.t2.motionsensors.domain.entity.*
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.math.abs
@@ -66,7 +58,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var touchSwipeData: MutableList<Data> = mutableListOf()
     private var touchBody: TouchBody? = null
     private val dateFormat: SimpleDateFormat by lazy {
-        SimpleDateFormat("yyyy-mm-dd HH:mm:ss:SSS",
+        SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS",
             Locale.getDefault())
     }
     private var isActionMove = false
@@ -294,8 +286,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
         val jsonData = Gson().toJson(sensorData)
         val jsonTouchData = Gson().toJson(touchBody)
-        viewModel.addSensorData(this ,jsonData)
-        viewModel.addTouchData(this ,jsonTouchData)
+        writeToFileOnDisk(jsonData ,"Sensor_${systemSecondTime()}.json")
+        /*viewModel.addSensorData(this ,jsonData)
+        viewModel.addTouchData(this ,jsonTouchData)*/
         Log.d("SENSOOR: ", jsonData)
         sensorData = FileData()
     }
