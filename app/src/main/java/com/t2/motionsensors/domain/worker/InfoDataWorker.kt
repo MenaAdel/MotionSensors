@@ -49,11 +49,11 @@ class InfoDataWorker(appContext: Context, params: WorkerParameters) :
         val touchApi =  biometricRepo.addTouchData(id ,file ,"info")
 
         return if (touchApi.status == 200) {
-            Log.d("Worker" ,"Success sending")
+            Log.d("Worker" ,"Success sending info data")
             Result.success()
         }
         else {
-            Log.d("Worker" ,"Fail sending: ${touchApi.message}")
+            Log.d("Worker" ,"Fail sending info: ${touchApi.message}")
             Result.failure()
         }
     }

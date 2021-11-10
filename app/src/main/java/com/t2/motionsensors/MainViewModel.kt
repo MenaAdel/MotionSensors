@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 class MainViewModel() : ViewModel() {
 
 
-    fun addInfoModel(context: Context) {
+    /*fun addInfoModel(context: Context) {
         val deviceDetails = DeviceDetails(
             timeStamp = systemSecondTime(),
             deviceId = context.getDeviceIMEI(),
@@ -35,7 +35,7 @@ class MainViewModel() : ViewModel() {
         )
 
         addInfoData(context ,Gson().toJson(deviceDetails))
-    }
+    }*/
 
     fun addSensorData(context: Context, jsonData: String) {
         viewModelScope.launch(Dispatchers.IO) {

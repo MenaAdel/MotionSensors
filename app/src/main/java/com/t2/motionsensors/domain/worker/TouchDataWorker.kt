@@ -22,7 +22,7 @@ class TouchDataWorker(appContext: Context, params: WorkerParameters) :
             filePath: String
         ) {
             val sensorDataWorker =
-                PeriodicWorkRequestBuilder<TouchDataWorker>(5, TimeUnit.MINUTES)
+                OneTimeWorkRequestBuilder<TouchDataWorker>()
             sensorDataWorker.setConstraints(
                 Constraints.Builder().setRequiredNetworkType(
                     NetworkType.CONNECTED
@@ -49,11 +49,11 @@ class TouchDataWorker(appContext: Context, params: WorkerParameters) :
         val touchApi =  biometricRepo.addTouchData(id ,file ,"touch_data")
 
         return if (touchApi.status == 200) {
-            Log.d("Worker" ,"Success sending")
+            Log.d("Worker" ,"Success sending touch data")
             Result.success()
         }
         else {
-            Log.d("Worker" ,"Fail sending: ${touchApi.message}")
+            Log.d("Worker" ,"Fail sending touch: ${touchApi.message}")
             Result.failure()
         }
     }

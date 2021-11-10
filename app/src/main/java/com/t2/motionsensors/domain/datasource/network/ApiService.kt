@@ -13,7 +13,7 @@ interface ApiService {
     @Multipart
     @POST("store_data")
     suspend fun addSensorValues(
-        @Part("data_type") type: String? = null,
+        @Part("data_type") type: RequestBody,
         @Part("user_id") userId: RequestBody,
         @Part file: MultipartBody.Part
     ): ApiResponse

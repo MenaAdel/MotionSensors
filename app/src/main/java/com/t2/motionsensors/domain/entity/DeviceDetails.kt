@@ -1,10 +1,10 @@
 package com.t2.motionsensors.domain.entity
 
 data class DeviceDetails(
-    val timeStamp: Long,
+    val carrier: String,
     val deviceId: String,
     val userId: String,
-    val phoneOs: String,
+    val phoneOS: String,
     val deviceType: String,
     val screenSpecs: ScreenSpecs
 )

@@ -11,7 +11,7 @@ import com.t2.motionsensors.domain.entity.SensorBody
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-class SensorDataWorker(appContext: Context, params: WorkerParameters) :
+class SensorDataWorker(val appContext: Context, params: WorkerParameters) :
     CoroutineWorker(appContext, params) {
 
     private val biometricRepo: IBiometric = BiometricImp()
@@ -23,7 +23,7 @@ class SensorDataWorker(appContext: Context, params: WorkerParameters) :
             sensorBody: SensorBody,
         ) {
             val sensorDataWorker =
-                PeriodicWorkRequestBuilder<SensorDataWorker>(5, TimeUnit.MINUTES)
+                OneTimeWorkRequestBuilder<SensorDataWorker>()
             sensorDataWorker.setConstraints(
                 Constraints.Builder().setRequiredNetworkType(
                     NetworkType.CONNECTED
@@ -49,11 +49,11 @@ class SensorDataWorker(appContext: Context, params: WorkerParameters) :
         val sensorApi = sensorBody?.let { biometricRepo.addSensorData(it) }
 
         return if (sensorApi?.status == 200) {
-            Log.d("Worker" ,"Success sending")
+            Log.d("Worker" ,"Success sending sensor data")
             Result.success()
         }
         else {
-            Log.d("Worker" ,"Fail sending: ${sensorApi?.message}")
+            Log.d("Worker" ,"Fail sending sensor: ${sensorApi?.message}")
             Result.failure()
         }
     }

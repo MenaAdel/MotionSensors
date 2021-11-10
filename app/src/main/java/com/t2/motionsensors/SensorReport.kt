@@ -1,5 +1,6 @@
 package com.t2.motionsensors
 
+import android.content.Context
 import android.content.res.Configuration
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -7,30 +8,34 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.icu.text.SimpleDateFormat
 import android.os.Build
-import android.os.Bundle
 import android.os.CountDownTimer
+import android.telephony.TelephonyManager
 import android.util.Log
-import android.view.MotionEvent
+import android.view.*
+import android.view.accessibility.AccessibilityEvent
+import com.t2.motionsensors.domain.entity.*
+import java.util.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.lifecycle.*
 import com.google.gson.Gson
-import com.t2.motionsensors.databinding.ActivityMainBinding
+import com.t2.motionsensors.domain.datasource.storage.writeToFile
 import com.t2.motionsensors.domain.datasource.storage.writeToFileOnDisk
-import com.t2.motionsensors.domain.entity.*
+import com.t2.motionsensors.domain.worker.InfoDataWorker
+import com.t2.motionsensors.domain.worker.SensorDataWorker
+import com.t2.motionsensors.domain.worker.TouchDataWorker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.util.*
 import kotlin.math.abs
 
 @RequiresApi(Build.VERSION_CODES.N)
-class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
+class SensorReport(val context: Context): SensorEventListener {
 
-    private lateinit var viewModel: MainViewModel
-    private lateinit var binding: ActivityMainBinding
+    private val TAG = this.javaClass.name
     private val sensorFlow: MutableSharedFlow<SensorEvent> = MutableSharedFlow()
     private val gravity: FloatArray = FloatArray(3)
     private var accelerometer: Sensor? = null
@@ -63,20 +68,14 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
             Locale.getDefault())
     }
     private var isActionMove = false
-    private var timer: CountDownTimer? = null
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        SensorReport(this)
-        /*viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
-        setupSensors()
-        initRecycler()
+    init {
+        dispatchTouchEventListener()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            setupSensors()
+        }
         touchBody = TouchBody(user_id = "test", swipe = swipe, tap = tap)
-
-        lifecycleScope.launch {
+        CoroutineScope(Dispatchers.Default).launch {
             sensorFlow.collectLatest {
                 when (it.sensor.type) {
                     Sensor.TYPE_LINEAR_ACCELERATION -> {
@@ -98,7 +97,7 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
                         }
                     }
                     Sensor.TYPE_ACCELEROMETER -> {
-                        val alpha = 0.8f
+                        val alpha = 0.8f;
 
                         gravity[0] = alpha * gravity[0] + (1 - alpha) * it.values[0]
                         gravity[1] = alpha * gravity[1] + (1 - alpha) * it.values[1]
@@ -118,56 +117,17 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
                         }
                     }
                 }
+
+                delay(30000)
+                fillSensorData()
             }
         }
-        setupClicking()*/
-    }
-/*
-    private fun setupClicking() {
-        with(binding){
-            startBtn.setOnClickListener {
-                counterTicker()
-            }
-            endBtn.setOnClickListener {
-                stopCounter()
-            }
-        }
-    }
-
-    private fun counterTicker() {
-        // Create the timer flow
-        sensorData = FileData()
-        var counter = 0
-        timer = object: CountDownTimer(Long.MAX_VALUE, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                binding.counter.text = "${counter++}"
-            }
-
-            override fun onFinish() {}
-        }
-        timer?.start()
-    }
-
-    private fun stopCounter(){
-        timer?.cancel()
-        lifecycleScope.launch { fillSensorData() }
-    }
-
-    private fun initRecycler() {
-        val data = ArrayList<ItemsViewModel>()
-
-        for (i in 1..20) {
-            data.add(ItemsViewModel(R.drawable.ic_launcher_background, "Item $i"))
-        }
-        with(binding.recyclerview) {
-            layoutManager = LinearLayoutManager(context)
-            adapter = CustomAdapter(data)
-        }
+        addInfoModel()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun setupSensors() {
-        val sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        val sensorManager = context.getSystemService(AppCompatActivity.SENSOR_SERVICE) as SensorManager
 
         // accelerometer
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -201,10 +161,6 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
         } ?: Log.d(TAG, "rotation not supported")
     }
 
-    companion object {
-        private const val TAG = "MainActivityScreen"
-    }
-
     @RequiresApi(Build.VERSION_CODES.N)
     override fun onSensorChanged(event: SensorEvent?) {
         Log.d(TAG, "sensor type is: ${event?.sensor?.type}")
@@ -219,8 +175,7 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
                         time = dateFormat.format(Date())
                     )
                 )
-                lifecycleScope.launch { sensorFlow.emit(event) }
-
+                CoroutineScope(Dispatchers.Default).launch { sensorFlow.emit(event) }
                 Log.d(
                     TAG,
                     "onSensorChanged x: ${event.values?.get(0)} y: ${event.values?.get(1)} z: ${
@@ -262,10 +217,10 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
                 )
             }
             Sensor.TYPE_LINEAR_ACCELERATION -> {
-                lifecycleScope.launch { sensorFlow.emit(event) }
+                CoroutineScope(Dispatchers.Default).launch { sensorFlow.emit(event) }
             }
             Sensor.TYPE_ROTATION_VECTOR -> {
-                lifecycleScope.launch { sensorFlow.emit(event) }
+                CoroutineScope(Dispatchers.Default).launch { sensorFlow.emit(event) }
             }
             else -> {
             }
@@ -291,41 +246,146 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
         }
         val jsonData = Gson().toJson(sensorData)
         val jsonTouchData = Gson().toJson(touchBody)
-        writeToFileOnDisk(jsonData ,"Sensor_${systemSecondTime()}.json")
-        *//*viewModel.addSensorData(this ,jsonData)
-        viewModel.addTouchData(this ,jsonTouchData)*//*
+        //context.writeToFileOnDisk(jsonData ,"Sensor_${systemSecondTime()}.json")
+        addSensorData(jsonData)
+        addTouchData(jsonTouchData)
         Log.d("SENSOOR: ", jsonData)
         sensorData = FileData()
     }
 
     private fun getDeviceOrientation(): Int {
-        return if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        return if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             1
         } else {
             0
         }
     }
 
-    override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
-        Log.d(TAG, "finger area is ${event?.size}")
-        Log.d(TAG, "pressure is ${event?.pressure}")
-        when (event?.action) {
-            MotionEvent.ACTION_DOWN -> {
-                startX = event.x
-                startY = event.y
-                startTime = System.currentTimeMillis()
-                Log.d(TAG, "startPoint is ${event.x} ,${event.y}")
+    private fun calculateVelocity(
+        startDistance: Float,
+        endDistance: Float,
+        duration: Float,
+    ): Float {
+        val distance = abs(endDistance - startDistance)
+        return distance / duration
+    }
+
+    private fun dispatchTouchEventListener() {
+        object :Window.Callback {
+            override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
+                TODO("Not yet implemented")
             }
-            MotionEvent.ACTION_MOVE -> {
-                isActionMove = true
-                moveX = event.x
-                moveY = event.y
+
+            override fun dispatchKeyShortcutEvent(event: KeyEvent?): Boolean {
+                TODO("Not yet implemented")
             }
-            MotionEvent.ACTION_UP -> {
-                onEventUp(event)
+
+            override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
+                Log.d(TAG, "finger area is ${event?.size}")
+                Log.d(TAG, "pressure is ${event?.pressure}")
+                when (event?.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        startX = event.x
+                        startY = event.y
+                        startTime = System.currentTimeMillis()
+                        Log.d(TAG, "startPoint is ${event.x} ,${event.y}")
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        isActionMove = true
+                        moveX = event.x
+                        moveY = event.y
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        onEventUp(event)
+                    }
+                }
+                return true
             }
+
+            override fun dispatchTrackballEvent(event: MotionEvent?): Boolean {
+                TODO("Not yet implemented")
+            }
+
+            override fun dispatchGenericMotionEvent(event: MotionEvent?): Boolean {
+                TODO("Not yet implemented")
+            }
+
+            override fun dispatchPopulateAccessibilityEvent(event: AccessibilityEvent?): Boolean {
+                TODO("Not yet implemented")
+            }
+
+            override fun onCreatePanelView(featureId: Int): View? {
+                TODO("Not yet implemented")
+            }
+
+            override fun onCreatePanelMenu(featureId: Int, menu: Menu): Boolean {
+                TODO("Not yet implemented")
+            }
+
+            override fun onPreparePanel(featureId: Int, view: View?, menu: Menu): Boolean {
+                TODO("Not yet implemented")
+            }
+
+            override fun onMenuOpened(featureId: Int, menu: Menu): Boolean {
+                TODO("Not yet implemented")
+            }
+
+            override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
+                TODO("Not yet implemented")
+            }
+
+            override fun onWindowAttributesChanged(attrs: WindowManager.LayoutParams?) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onContentChanged() {
+                TODO("Not yet implemented")
+            }
+
+            override fun onWindowFocusChanged(hasFocus: Boolean) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onAttachedToWindow() {
+                TODO("Not yet implemented")
+            }
+
+            override fun onDetachedFromWindow() {
+                TODO("Not yet implemented")
+            }
+
+            override fun onPanelClosed(featureId: Int, menu: Menu) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onSearchRequested(): Boolean {
+                TODO("Not yet implemented")
+            }
+
+            override fun onSearchRequested(searchEvent: SearchEvent?): Boolean {
+                TODO("Not yet implemented")
+            }
+
+            override fun onWindowStartingActionMode(callback: ActionMode.Callback?): ActionMode? {
+                TODO("Not yet implemented")
+            }
+
+            override fun onWindowStartingActionMode(
+                callback: ActionMode.Callback?,
+                type: Int,
+            ): ActionMode? {
+                TODO("Not yet implemented")
+            }
+
+            override fun onActionModeStarted(mode: ActionMode?) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onActionModeFinished(mode: ActionMode?) {
+                TODO("Not yet implemented")
+            }
+
         }
-        return super.dispatchTouchEvent(event)
     }
 
     private fun onEventUp(event: MotionEvent) {
@@ -391,12 +451,57 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
         endTime = 0L
     }
 
-    private fun calculateVelocity(
-        startDistance: Float,
-        endDistance: Float,
-        duration: Float,
-    ): Float {
-        val distance = abs(endDistance - startDistance)
-        return distance / duration
-    }*/
+    private fun addInfoModel() {
+        val carrierName = (context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager)?.networkOperatorName ?: "unknown"
+        val deviceDetails = DeviceDetails(
+            deviceId = context.getDeviceIMEI(),
+            carrier = carrierName,
+            userId = "MENA",
+            phoneOS = "android API ${Build.VERSION.SDK_INT}",
+            deviceType = getDeviceName(),
+            screenSpecs = ScreenSpecs(
+                safeAreaPaddingBottom = 0,
+                safeAreaPaddingTop = 0,
+                height = context.pxToMm(context.resources.displayMetrics.heightPixels).toInt(),
+                width = context.pxToMm(context.resources.displayMetrics.widthPixels).toInt(),
+                diameter = context.getScreenDiameter()
+            )
+        )
+
+        addInfoData(context ,Gson().toJson(deviceDetails))
+    }
+
+    private fun addSensorData(jsonData: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val filePath = context.writeToFile(jsonData, "sensor.json")
+            val sensorBody = SensorBody(file = filePath)
+            SensorDataWorker.startWorker(
+                context,
+                sensorBody
+            )
+        }
+    }
+
+    private fun addTouchData(jsonData: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val filePath = context.writeToFile(jsonData, "touch.json")
+            TouchDataWorker.startWorker(
+                context,
+                "testId",
+                filePath.toString()
+            )
+        }
+    }
+
+    private fun addInfoData(context: Context, jsonData: String) {
+        CoroutineScope(Dispatchers.IO).launch{
+            val filePath = context.writeToFile(jsonData, "info.json")
+            context.writeToFileOnDisk(jsonData, "info.json")
+            InfoDataWorker.startWorker(
+                context,
+                "testId",
+                filePath.toString()
+            )
+        }
+    }
 }
