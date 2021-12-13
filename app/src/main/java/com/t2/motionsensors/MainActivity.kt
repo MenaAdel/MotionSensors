@@ -27,7 +27,7 @@ import java.util.*
 import kotlin.math.abs
 
 @RequiresApi(Build.VERSION_CODES.N)
-class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
+class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var viewModel: MainViewModel
     private lateinit var binding: ActivityMainBinding
@@ -70,8 +70,15 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        SensorReport(this)
-        /*viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+        /*val sensorReport = SensorReport(this, this)
+        sensorReport.setSensorListener(object : SensorListener {
+            override fun onApiValueChanged(response: String) {
+                Log.d("Activity", response)
+            }
+        }
+        )*/
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+        viewModel.addInfoModel(this)
         setupSensors()
         initRecycler()
         touchBody = TouchBody(user_id = "test", swipe = swipe, tap = tap)
@@ -120,9 +127,9 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
                 }
             }
         }
-        setupClicking()*/
+        setupClicking()
     }
-/*
+
     private fun setupClicking() {
         with(binding){
             startBtn.setOnClickListener {
@@ -291,11 +298,12 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
         }
         val jsonData = Gson().toJson(sensorData)
         val jsonTouchData = Gson().toJson(touchBody)
-        writeToFileOnDisk(jsonData ,"Sensor_${systemSecondTime()}.json")
-        *//*viewModel.addSensorData(this ,jsonData)
-        viewModel.addTouchData(this ,jsonTouchData)*//*
-        Log.d("SENSOOR: ", jsonData)
+        writeToFileOnDisk(jsonData ,"Android_Scenario_${systemSecondTime()}.json")
         sensorData = FileData()
+        viewModel.addSensorData(this ,jsonData)
+        viewModel.addTouchData(this ,jsonTouchData)
+        Log.d("SENSOOR: ", jsonData)
+
     }
 
     private fun getDeviceOrientation(): Int {
@@ -398,5 +406,5 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener*/ {
     ): Float {
         val distance = abs(endDistance - startDistance)
         return distance / duration
-    }*/
+    }
 }

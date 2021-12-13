@@ -18,6 +18,7 @@ class SensorDataWorker(val appContext: Context, params: WorkerParameters) :
 
     companion object {
         private const val SENSOR_BODY = "sensorBody"
+        const val OUTPUT_KEY_SENSOR = "outputKeySensor"
         fun startWorker(
             context: Context,
             sensorBody: SensorBody,
@@ -36,9 +37,10 @@ class SensorDataWorker(val appContext: Context, params: WorkerParameters) :
             }
             sensorDataWorker.setInputData(inputData.build())
 
-            WorkManager.getInstance(context).enqueue(
-                sensorDataWorker.build()
-            )
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork("SensorDataWorker", ExistingWorkPolicy.KEEP,
+                    sensorDataWorker.build()
+                )
         }
     }
 
@@ -49,12 +51,14 @@ class SensorDataWorker(val appContext: Context, params: WorkerParameters) :
         val sensorApi = sensorBody?.let { biometricRepo.addSensorData(it) }
 
         return if (sensorApi?.status == 200) {
-            Log.d("Worker" ,"Success sending sensor data")
-            Result.success()
-        }
-        else {
-            Log.d("Worker" ,"Fail sending sensor: ${sensorApi?.message}")
-            Result.failure()
+            Log.d("Worker", "Success sending sensor data")
+            val outputData = createOutputData("Success sending sensor data", OUTPUT_KEY_SENSOR)
+            Result.success(outputData)
+        } else {
+            Log.d("Worker", "Fail sending sensor: ${sensorApi?.message}")
+            val outputData =
+                createOutputData("Fail sending sensor: ${sensorApi?.message}", OUTPUT_KEY_SENSOR)
+            Result.failure(outputData)
         }
     }
 

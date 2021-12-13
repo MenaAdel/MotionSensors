@@ -2,6 +2,7 @@ package com.t2.motionsensors
 
 import android.content.Context
 import android.os.Build
+import android.telephony.TelephonyManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
@@ -18,12 +19,15 @@ import kotlinx.coroutines.launch
 class MainViewModel() : ViewModel() {
 
 
-    /*fun addInfoModel(context: Context) {
+    fun addInfoModel(context: Context) {
+        val carrierName =
+            (context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager)?.networkOperatorName
+                ?: "unknown"
         val deviceDetails = DeviceDetails(
-            timeStamp = systemSecondTime(),
             deviceId = context.getDeviceIMEI(),
-            userId = "",
-            phoneOs = "android API ${Build.VERSION.SDK_INT}",
+            carrier = carrierName,
+            userId = "MENA",
+            phoneOS = "android API ${Build.VERSION.SDK_INT}",
             deviceType = getDeviceName(),
             screenSpecs = ScreenSpecs(
                 safeAreaPaddingBottom = 0,
@@ -35,7 +39,7 @@ class MainViewModel() : ViewModel() {
         )
 
         addInfoData(context ,Gson().toJson(deviceDetails))
-    }*/
+    }
 
     fun addSensorData(context: Context, jsonData: String) {
         viewModelScope.launch(Dispatchers.IO) {

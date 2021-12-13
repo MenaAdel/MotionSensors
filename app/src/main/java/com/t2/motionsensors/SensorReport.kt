@@ -1,5 +1,6 @@
 package com.t2.motionsensors
 
+import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
 import android.hardware.Sensor
@@ -8,35 +9,36 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.icu.text.SimpleDateFormat
 import android.os.Build
-import android.os.CountDownTimer
 import android.telephony.TelephonyManager
 import android.util.Log
 import android.view.*
 import android.view.accessibility.AccessibilityEvent
-import com.t2.motionsensors.domain.entity.*
-import java.util.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.*
+import androidx.lifecycle.asFlow
+import androidx.work.WorkManager
 import com.google.gson.Gson
 import com.t2.motionsensors.domain.datasource.storage.writeToFile
 import com.t2.motionsensors.domain.datasource.storage.writeToFileOnDisk
+import com.t2.motionsensors.domain.entity.*
 import com.t2.motionsensors.domain.worker.InfoDataWorker
+import com.t2.motionsensors.domain.worker.InfoDataWorker.Companion.OUTPUT_KEY_INFO
 import com.t2.motionsensors.domain.worker.SensorDataWorker
 import com.t2.motionsensors.domain.worker.TouchDataWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.util.*
 import kotlin.math.abs
 
 @RequiresApi(Build.VERSION_CODES.N)
-class SensorReport(val context: Context): SensorEventListener {
+class SensorReport(val context: Context ,val activity: Activity) : SensorEventListener {
 
     private val TAG = this.javaClass.name
-    private val sensorFlow: MutableSharedFlow<SensorEvent> = MutableSharedFlow()
+    private val sensorFlow: MutableStateFlow<SensorEvent?> = MutableStateFlow(null)
     private val gravity: FloatArray = FloatArray(3)
     private var accelerometer: Sensor? = null
     private var accelerometerUncalibrated: Sensor? = null
@@ -68,66 +70,73 @@ class SensorReport(val context: Context): SensorEventListener {
             Locale.getDefault())
     }
     private var isActionMove = false
-
+    var listener: SensorListener? = null
     init {
         dispatchTouchEventListener()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             setupSensors()
         }
         touchBody = TouchBody(user_id = "test", swipe = swipe, tap = tap)
-        CoroutineScope(Dispatchers.Default).launch {
+            CoroutineScope(Dispatchers.Main).launch {
             sensorFlow.collectLatest {
-                when (it.sensor.type) {
-                    Sensor.TYPE_LINEAR_ACCELERATION -> {
-                        deviceMotionObject.acceleration = CoordinatesDevice(
-                            x = it.values?.get(0),
-                            y = it.values?.get(1),
-                            z = it.values?.get(2)
-                        )
-                    }
-                    Sensor.TYPE_ROTATION_VECTOR -> {
-                        deviceMotionObject.apply {
-                            rotation = Rotation(
-                                alpha = it.values?.get(0),
-                                beta = it.values?.get(1),
-                                gamma = it.values?.get(2)
-                            )
-                            time = dateFormat.format(Date())
-                            orientation = getDeviceOrientation()
-                        }
-                    }
-                    Sensor.TYPE_ACCELEROMETER -> {
-                        val alpha = 0.8f;
-
-                        gravity[0] = alpha * gravity[0] + (1 - alpha) * it.values[0]
-                        gravity[1] = alpha * gravity[1] + (1 - alpha) * it.values[1]
-                        gravity[2] = alpha * gravity[2] + (1 - alpha) * it.values[2]
-
-                        deviceMotionObject.apply {
-                            accelerationIncludingGravity = CoordinatesDevice(
+                it?.let {
+                    when (it.sensor.type) {
+                        Sensor.TYPE_LINEAR_ACCELERATION -> {
+                            deviceMotionObject.acceleration = CoordinatesDevice(
                                 x = it.values?.get(0),
                                 y = it.values?.get(1),
                                 z = it.values?.get(2)
                             )
-                            acceleration = CoordinatesDevice(
-                                x = it.values[0] - gravity[0],
-                                y = it.values[1] - gravity[1],
-                                z = it.values[2] - gravity[2]
-                            )
+                        }
+                        Sensor.TYPE_ROTATION_VECTOR -> {
+                            deviceMotionObject.apply {
+                                rotation = Rotation(
+                                    alpha = it.values?.get(0),
+                                    beta = it.values?.get(1),
+                                    gamma = it.values?.get(2)
+                                )
+                                time = dateFormat.format(Date())
+                                orientation = getDeviceOrientation()
+                            }
+                        }
+                        Sensor.TYPE_ACCELEROMETER -> {
+                            val alpha = 0.8f;
+
+                            gravity[0] = alpha * gravity[0] + (1 - alpha) * it.values[0]
+                            gravity[1] = alpha * gravity[1] + (1 - alpha) * it.values[1]
+                            gravity[2] = alpha * gravity[2] + (1 - alpha) * it.values[2]
+
+                            deviceMotionObject.apply {
+                                accelerationIncludingGravity = CoordinatesDevice(
+                                    x = it.values?.get(0),
+                                    y = it.values?.get(1),
+                                    z = it.values?.get(2)
+                                )
+                                acceleration = CoordinatesDevice(
+                                    x = it.values[0] - gravity[0],
+                                    y = it.values[1] - gravity[1],
+                                    z = it.values[2] - gravity[2]
+                                )
+                            }
                         }
                     }
-                }
 
-                delay(30000)
-                fillSensorData()
+                    delay(30000)
+                    fillSensorData()
+                }
             }
         }
         addInfoModel()
     }
 
+    fun setSensorListener(listener: SensorListener) {
+        this.listener = listener
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     private fun setupSensors() {
-        val sensorManager = context.getSystemService(AppCompatActivity.SENSOR_SERVICE) as SensorManager
+        val sensorManager =
+            context.getSystemService(AppCompatActivity.SENSOR_SERVICE) as SensorManager
 
         // accelerometer
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -175,7 +184,7 @@ class SensorReport(val context: Context): SensorEventListener {
                         time = dateFormat.format(Date())
                     )
                 )
-                CoroutineScope(Dispatchers.Default).launch { sensorFlow.emit(event) }
+                    CoroutineScope(Dispatchers.Main).launch { sensorFlow.emit(event) }
                 Log.d(
                     TAG,
                     "onSensorChanged x: ${event.values?.get(0)} y: ${event.values?.get(1)} z: ${
@@ -217,10 +226,10 @@ class SensorReport(val context: Context): SensorEventListener {
                 )
             }
             Sensor.TYPE_LINEAR_ACCELERATION -> {
-                CoroutineScope(Dispatchers.Default).launch { sensorFlow.emit(event) }
+                CoroutineScope(Dispatchers.Main).launch { sensorFlow.emit(event) }
             }
             Sensor.TYPE_ROTATION_VECTOR -> {
-                CoroutineScope(Dispatchers.Default).launch { sensorFlow.emit(event) }
+                CoroutineScope(Dispatchers.Main).launch { sensorFlow.emit(event) }
             }
             else -> {
             }
@@ -271,7 +280,8 @@ class SensorReport(val context: Context): SensorEventListener {
     }
 
     private fun dispatchTouchEventListener() {
-        object :Window.Callback {
+        val window = activity.window
+        val windowCallBack = object : Window.Callback {
             override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
                 TODO("Not yet implemented")
             }
@@ -315,15 +325,15 @@ class SensorReport(val context: Context): SensorEventListener {
             }
 
             override fun onCreatePanelView(featureId: Int): View? {
-                TODO("Not yet implemented")
+                return null
             }
 
             override fun onCreatePanelMenu(featureId: Int, menu: Menu): Boolean {
-                TODO("Not yet implemented")
+                return true
             }
 
             override fun onPreparePanel(featureId: Int, view: View?, menu: Menu): Boolean {
-                TODO("Not yet implemented")
+                return true
             }
 
             override fun onMenuOpened(featureId: Int, menu: Menu): Boolean {
@@ -335,23 +345,21 @@ class SensorReport(val context: Context): SensorEventListener {
             }
 
             override fun onWindowAttributesChanged(attrs: WindowManager.LayoutParams?) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onContentChanged() {
-                TODO("Not yet implemented")
+
             }
 
             override fun onWindowFocusChanged(hasFocus: Boolean) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onAttachedToWindow() {
-                TODO("Not yet implemented")
             }
 
             override fun onDetachedFromWindow() {
-                TODO("Not yet implemented")
             }
 
             override fun onPanelClosed(featureId: Int, menu: Menu) {
@@ -386,6 +394,7 @@ class SensorReport(val context: Context): SensorEventListener {
             }
 
         }
+        window.callback = windowCallBack
     }
 
     private fun onEventUp(event: MotionEvent) {
@@ -452,7 +461,9 @@ class SensorReport(val context: Context): SensorEventListener {
     }
 
     private fun addInfoModel() {
-        val carrierName = (context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager)?.networkOperatorName ?: "unknown"
+        val carrierName =
+            (context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager)?.networkOperatorName
+                ?: "unknown"
         val deviceDetails = DeviceDetails(
             deviceId = context.getDeviceIMEI(),
             carrier = carrierName,
@@ -468,7 +479,7 @@ class SensorReport(val context: Context): SensorEventListener {
             )
         )
 
-        addInfoData(context ,Gson().toJson(deviceDetails))
+        addInfoData(context, Gson().toJson(deviceDetails))
     }
 
     private fun addSensorData(jsonData: String) {
@@ -479,6 +490,17 @@ class SensorReport(val context: Context): SensorEventListener {
                 context,
                 sensorBody
             )
+            WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData("SensorDataWorker").asFlow()
+                .collectLatest {
+                    if (it.size != 0) {
+                        Log.d("RRR",
+                            it[0].outputData.getString(SensorDataWorker.OUTPUT_KEY_SENSOR)
+                                .toString())
+                        it[0].outputData.getString(SensorDataWorker.OUTPUT_KEY_SENSOR)
+                        listener?.onApiValueChanged(it[0].outputData.getString(SensorDataWorker.OUTPUT_KEY_SENSOR).toString())
+
+                    }
+                }
         }
     }
 
@@ -490,11 +512,20 @@ class SensorReport(val context: Context): SensorEventListener {
                 "testId",
                 filePath.toString()
             )
+            WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData("TouchDataWorker").asFlow()
+                .collectLatest {
+                    if (it.size != 0) {
+                        Log.d("RRR",
+                            it[0].outputData.getString(TouchDataWorker.OUTPUT_KEY_TOUCH).toString())
+                        it[0].outputData.getString(TouchDataWorker.OUTPUT_KEY_TOUCH)
+                        listener?.onApiValueChanged(it[0].outputData.getString(TouchDataWorker.OUTPUT_KEY_TOUCH).toString())
+                    }
+                }
         }
     }
 
     private fun addInfoData(context: Context, jsonData: String) {
-        CoroutineScope(Dispatchers.IO).launch{
+        CoroutineScope(Dispatchers.IO).launch {
             val filePath = context.writeToFile(jsonData, "info.json")
             context.writeToFileOnDisk(jsonData, "info.json")
             InfoDataWorker.startWorker(
@@ -502,6 +533,16 @@ class SensorReport(val context: Context): SensorEventListener {
                 "testId",
                 filePath.toString()
             )
+            WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData("InfoDataWorker").asFlow()
+                .collectLatest {
+                    if (it.size != 0) {
+                        Log.d("RRR",
+                            it[0].outputData.getString(OUTPUT_KEY_INFO).toString())
+                        it[0].outputData.getString(OUTPUT_KEY_INFO)
+                        listener?.onApiValueChanged(it[0].outputData.getString(OUTPUT_KEY_INFO).toString())
+
+                    }
+                }
         }
     }
 }
