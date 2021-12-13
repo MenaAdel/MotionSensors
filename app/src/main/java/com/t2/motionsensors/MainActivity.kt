@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
+import com.karumi.dexter.listener.single.PermissionListener
 import com.t2.motionsensors.databinding.ActivityMainBinding
 import com.t2.motionsensors.domain.datasource.storage.writeToFileOnDisk
 import com.t2.motionsensors.domain.entity.*
@@ -65,6 +66,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var isActionMove = false
     private var timer: CountDownTimer? = null
 
+    private var permissionListener: PermissionListener? = null
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,6 +80,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             }
         }
         )*/
+        requestPermission()
+        showPermissionDialog()
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         viewModel.addInfoModel(this)
         setupSensors()
