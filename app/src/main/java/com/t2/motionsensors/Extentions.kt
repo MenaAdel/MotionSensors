@@ -20,7 +20,7 @@ import kotlin.math.sqrt
 
 @SuppressLint("HardwareIds")
 fun Context.getDeviceIMEI(): String {
-    return if (Build.VERSION.SDK_INT >= VERSION_CODES.Q) {
+    return if (VERSION.SDK_INT >= VERSION_CODES.Q) {
         Settings.Secure.getString(
             contentResolver,
             Settings.Secure.ANDROID_ID)

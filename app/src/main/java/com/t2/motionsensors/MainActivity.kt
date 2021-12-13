@@ -80,7 +80,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             }
         }
         )*/
-        requestPermission()
         showPermissionDialog()
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         viewModel.addInfoModel(this)

@@ -24,7 +24,7 @@ class MainViewModel() : ViewModel() {
             (context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager)?.networkOperatorName
                 ?: "unknown"
         val deviceDetails = DeviceDetails(
-            deviceId = context.getDeviceIMEI(),
+            deviceId = context.requestPermission(),
             carrier = carrierName,
             userId = "MENA",
             phoneOS = "android API ${Build.VERSION.SDK_INT}",
