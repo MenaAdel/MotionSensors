@@ -21,6 +21,7 @@ import com.karumi.dexter.listener.single.PermissionListener
 import com.t2.motionsensors.databinding.ActivityMainBinding
 import com.t2.motionsensors.domain.datasource.storage.writeToFileOnDisk
 import com.t2.motionsensors.domain.entity.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -65,8 +66,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
     private var isActionMove = false
     private var timer: CountDownTimer? = null
-
-    private var permissionListener: PermissionListener? = null
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -147,7 +146,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private fun counterTicker() {
         // Create the timer flow
-        sensorData = FileData()
+        setSensorDataEmpty()
         var counter = 0
         timer = object: CountDownTimer(Long.MAX_VALUE, 1000) {
             override fun onTick(millisUntilFinished: Long) {
@@ -160,8 +159,21 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun stopCounter(){
-        timer?.cancel()
-        lifecycleScope.launch { fillSensorData() }
+        try {
+            timer?.cancel()
+            lifecycleScope.launch { fillSensorData() }
+        }catch (e: Exception) {
+            Log.d( "Exception","Exception: ${e.message}")
+        }
+    }
+
+    private fun setSensorDataEmpty() {
+        sensorData = FileData()
+        accelerometerArray.clear()
+        gyroscopeArray.clear()
+        magnetometerArray.clear()
+        deviceMotionArray.clear()
+        index = 0
     }
 
     private fun initRecycler() {
@@ -303,7 +315,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         val jsonData = Gson().toJson(sensorData)
         val jsonTouchData = Gson().toJson(touchBody)
         writeToFileOnDisk(jsonData ,"Android_Scenario_${systemSecondTime()}.json")
-        sensorData = FileData()
         viewModel.addSensorData(this ,jsonData)
         viewModel.addTouchData(this ,jsonTouchData)
         Log.d("SENSOOR: ", jsonData)
