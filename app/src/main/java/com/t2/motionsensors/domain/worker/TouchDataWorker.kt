@@ -6,7 +6,6 @@ import androidx.work.*
 import com.t2.motionsensors.domain.datasource.repo.BiometricImp
 import com.t2.motionsensors.domain.datasource.repo.IBiometric
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 class TouchDataWorker(appContext: Context, params: WorkerParameters) :
     CoroutineWorker(appContext, params) {
@@ -15,11 +14,13 @@ class TouchDataWorker(appContext: Context, params: WorkerParameters) :
 
     companion object {
         private const val USER_ID = "userId"
+        private const val ACCOUNT_ID = "accountId"
         private const val FILE_PATH = "filePath"
         const val OUTPUT_KEY_TOUCH = "outputKeyTouch"
         fun startWorker(
             context: Context,
             userId: String,
+            accountId: String,
             filePath: String
         ) {
             val sensorDataWorker =
@@ -33,6 +34,7 @@ class TouchDataWorker(appContext: Context, params: WorkerParameters) :
             val inputData = Data.Builder()
             inputData.apply {
                 putString(USER_ID, userId)
+                putString(ACCOUNT_ID, accountId)
                 putString(FILE_PATH, filePath)
             }
             sensorDataWorker.setInputData(inputData.build())
@@ -47,8 +49,8 @@ class TouchDataWorker(appContext: Context, params: WorkerParameters) :
     override suspend fun doWork(): Result {
         val file = File(inputData.getString(FILE_PATH).toString())
         val id = inputData.getString(USER_ID).toString()
-
-        val touchApi =  biometricRepo.addTouchData(id ,file ,"touch_data")
+        val accountId = inputData.getString(ACCOUNT_ID).toString()
+        val touchApi =  biometricRepo.addTouchData(accountId ,id ,file ,"touch_data")
 
         return if (touchApi.status == 200) {
             Log.d("Worker", "Success sending touch data")

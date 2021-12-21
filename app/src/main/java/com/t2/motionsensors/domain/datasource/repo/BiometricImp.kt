@@ -21,11 +21,11 @@ class BiometricImp(private val apiService: ApiService = buildApi()) : IBiometric
                 file.asRequestBody("application/json".toMediaType())
             ),
             type = "temp_sensors_data".toRequestBody("text/plain".toMediaType()),
-            account = "testAccount".toRequestBody("text/plain".toMediaType())
+            account = body.account_id.toRequestBody("text/plain".toMediaType())
         )
     }
 
-    override suspend fun addTouchData(user_id: String, file: File ,type: String): ApiResponse {
+    override suspend fun addTouchData(accountId: String ,user_id: String, file: File ,type: String): ApiResponse {
         return apiService.addSensorValues(
             userId = user_id.toRequestBody("text/plain".toMediaType()),
             file = MultipartBody.Part.createFormData(
@@ -34,7 +34,7 @@ class BiometricImp(private val apiService: ApiService = buildApi()) : IBiometric
                 file.asRequestBody("application/json".toMediaType())
             ),
             type = type.toRequestBody("text/plain".toMediaType()),
-            account = "testAccount".toRequestBody("text/plain".toMediaType())
+            account = accountId.toRequestBody("text/plain".toMediaType())
         )
     }
 }

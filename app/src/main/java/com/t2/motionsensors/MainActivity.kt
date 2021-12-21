@@ -81,7 +81,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         )*/
         showPermissionDialog()
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
-        viewModel.addInfoModel(this)
         setupSensors()
         initRecycler()
         touchBody = TouchBody(user_id = "test", swipe = swipe, tap = tap)
@@ -133,8 +132,17 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         setupClicking()
     }
 
+    private fun sendInfoData() {
+        if (isFirstTime) {
+            viewModel.addInfoModel(binding.userId.text.toString(),
+                binding.accountId.text.toString(),
+                this)
+            isFirstTime = false
+        }
+    }
+
     private fun setupClicking() {
-        with(binding){
+        with(binding) {
             startBtn.setOnClickListener {
                 counterTicker()
             }
@@ -146,9 +154,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private fun counterTicker() {
         // Create the timer flow
+        sendInfoData()
         setSensorDataEmpty()
         var counter = 0
-        timer = object: CountDownTimer(Long.MAX_VALUE, 1000) {
+        timer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 binding.counter.text = "${counter++}"
             }
@@ -158,12 +167,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         timer?.start()
     }
 
-    private fun stopCounter(){
+    private fun stopCounter() {
         try {
             timer?.cancel()
             lifecycleScope.launch { fillSensorData() }
-        }catch (e: Exception) {
-            Log.d( "Exception","Exception: ${e.message}")
+        } catch (e: Exception) {
+            Log.d("Exception", "Exception: ${e.message}")
         }
     }
 
@@ -226,11 +235,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     companion object {
         private const val TAG = "MainActivityScreen"
+        var isFirstTime: Boolean = true
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
     override fun onSensorChanged(event: SensorEvent?) {
-        Log.d(TAG, "sensor type is: ${event?.sensor?.type}")
+        //Log.d(TAG, "sensor type is: ${event?.sensor?.type}")
 
         when (event?.sensor?.type) {
             Sensor.TYPE_ACCELEROMETER -> {
@@ -244,12 +254,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 )
                 lifecycleScope.launch { sensorFlow.emit(event) }
 
-                Log.d(
+                /*Log.d(
                     TAG,
                     "onSensorChanged x: ${event.values?.get(0)} y: ${event.values?.get(1)} z: ${
                         event.values?.get(2)
                     }"
-                )
+                )*/
             }
             Sensor.TYPE_GYROSCOPE -> {
                 gyroscopeArray.add(
@@ -260,12 +270,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         time = dateFormat.format(Date())
                     )
                 )
-                Log.d(
+                /*Log.d(
                     TAG,
                     "onSensorChanged x: ${event.values?.get(0)} y: ${event.values?.get(1)} z: ${
                         event.values?.get(2)
                     }"
-                )
+                )*/
 
             }
             Sensor.TYPE_MAGNETIC_FIELD -> {
@@ -277,12 +287,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         time = dateFormat.format(Date())
                     )
                 )
-                Log.d(
+                /*Log.d(
                     TAG,
                     "onSensorChanged x: ${event.values?.get(0)} y: ${event.values?.get(1)} z: ${
                         event.values?.get(2)
                     }"
-                )
+                )*/
             }
             Sensor.TYPE_LINEAR_ACCELERATION -> {
                 lifecycleScope.launch { sensorFlow.emit(event) }
@@ -299,7 +309,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun fillSensorData() {
-        Log.d("fillS", "${deviceMotionObject.isNotEmpty()}")
+        //Log.d("fillS", "${deviceMotionObject.isNotEmpty()}")
         if (deviceMotionObject.isNotEmpty()) {
             deviceMotionArray.add(index, deviceMotionObject)
             deviceMotionObject = DeviceMotion()
@@ -314,10 +324,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
         val jsonData = Gson().toJson(sensorData)
         val jsonTouchData = Gson().toJson(touchBody)
-        writeToFileOnDisk(jsonData ,"Android_Scenario_${systemSecondTime()}.json")
-        viewModel.addSensorData(this ,jsonData)
-        viewModel.addTouchData(this ,jsonTouchData)
-        Log.d("SENSOOR: ", jsonData)
+        writeToFileOnDisk(jsonData, "Android_Scenario_${systemSecondTime()}.json")
+        viewModel.addSensorData(userId = binding.userId.text.toString(),
+            accountId = binding.accountId.text.toString(), this, jsonData)
+        viewModel.addTouchData(userId = binding.userId.text.toString(),
+            accountId = binding.accountId.text.toString(), this, jsonTouchData)
+        //Log.d("SENSOOR: ", jsonData)
 
     }
 
@@ -330,8 +342,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
-        Log.d(TAG, "finger area is ${event?.size}")
-        Log.d(TAG, "pressure is ${event?.pressure}")
+        //Log.d(TAG, "finger area is ${event?.size}")
+        //Log.d(TAG, "pressure is ${event?.pressure}")
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
                 startX = event.x
@@ -355,9 +367,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         endX = event.x
         endY = event.y
         endTime = System.currentTimeMillis()
-        Log.d(TAG, "endPoint is ${event.x} ,${event.y}")
-        Log.d(TAG, "distance x is ${endX - startX}")
-        Log.d(TAG, "distance y is ${endY - startY}")
+        //Log.d(TAG, "endPoint is ${event.x} ,${event.y}")
+        //Log.d(TAG, "distance x is ${endX - startX}")
+        //Log.d(TAG, "distance y is ${endY - startY}")
         val xVelocity = calculateVelocity(startX, endX, (endTime - startTime).toFloat())
         val yVelocity = calculateVelocity(startY, endY, (endTime - startTime).toFloat())
         val data = Data(dx = endX - startX,
@@ -390,7 +402,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             phone_orientation = getDeviceOrientation())
         tap.add(movement)
         val jsonData = Gson().toJson(touchBody)
-        Log.d("jsonto ", jsonData)
+        //Log.d("jsonto ", jsonData)
     }
 
     private fun fillTouchSwipe() {

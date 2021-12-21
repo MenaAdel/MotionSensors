@@ -19,14 +19,14 @@ import kotlinx.coroutines.launch
 class MainViewModel() : ViewModel() {
 
 
-    fun addInfoModel(context: Context) {
+    fun addInfoModel(userId: String, accountId: String, context: Context) {
         val carrierName =
             (context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager)?.networkOperatorName
                 ?: "unknown"
         val deviceDetails = DeviceDetails(
             deviceId = context.requestPermission(),
             carrier = carrierName,
-            userId = "MENA",
+            userId = userId,
             phoneOS = "android API ${Build.VERSION.SDK_INT}",
             deviceType = getDeviceName(),
             screenSpecs = ScreenSpecs(
@@ -38,13 +38,13 @@ class MainViewModel() : ViewModel() {
             )
         )
 
-        addInfoData(context ,Gson().toJson(deviceDetails))
+        addInfoData(userId, accountId, context, Gson().toJson(deviceDetails))
     }
 
-    fun addSensorData(context: Context, jsonData: String) {
+    fun addSensorData(userId: String, accountId: String, context: Context, jsonData: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val filePath = context.writeToFile(jsonData, "sensor.json")
-            val sensorBody = SensorBody(file = filePath)
+            val sensorBody = SensorBody(user_id = userId, account_id = accountId, file = filePath)
             SensorDataWorker.startWorker(
                 context,
                 sensorBody
@@ -52,23 +52,25 @@ class MainViewModel() : ViewModel() {
         }
     }
 
-    fun addTouchData(context: Context, jsonData: String) {
+    fun addTouchData(userId: String, accountId: String, context: Context, jsonData: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val filePath = context.writeToFile(jsonData, "touch.json")
             TouchDataWorker.startWorker(
                 context,
-                "testId",
+                userId,
+                accountId = accountId,
                 filePath.toString()
             )
         }
     }
 
-    fun addInfoData(context: Context, jsonData: String) {
+    fun addInfoData(userId: String, accountId: String, context: Context, jsonData: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val filePath = context.writeToFile(jsonData, "info.json")
             InfoDataWorker.startWorker(
                 context,
-                "testId",
+                userId,
+                accountId = accountId,
                 filePath.toString()
             )
         }

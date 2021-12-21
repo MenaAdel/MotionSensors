@@ -1,3 +1,4 @@
+/*
 package com.t2.motionsensors
 
 import android.app.Activity
@@ -545,4 +546,4 @@ class SensorReport(val context: Context ,val activity: Activity) : SensorEventLi
                 }
         }
     }
-}
+}*/
