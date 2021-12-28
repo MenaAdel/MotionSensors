@@ -30,6 +30,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import java.util.*
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
 
 
@@ -48,13 +49,13 @@ open class SensorReport(
     private var rotation: Sensor? = null
     private var sensorData = FileData()
     @Volatile
-    private var accelerometerArray = mutableListOf<Coordinates>()
+    private var accelerometerArray = CopyOnWriteArrayList<Coordinates>()
     @Volatile
-    private var gyroscopeArray = mutableListOf<Coordinates>()
+    private var gyroscopeArray = CopyOnWriteArrayList<Coordinates>()
     @Volatile
-    private var magnetometerArray = mutableListOf<Coordinates>()
+    private var magnetometerArray = CopyOnWriteArrayList<Coordinates>()
     @Volatile
-    private var deviceMotionArray = mutableListOf<DeviceMotion>()
+    private var deviceMotionArray = CopyOnWriteArrayList<DeviceMotion>()
     private var deviceMotionObject: DeviceMotion = DeviceMotion()
     private var index = 0
     private var startX: Float = 0f
@@ -70,6 +71,8 @@ open class SensorReport(
     private var touchData: MutableList<Data> = mutableListOf()
     private var touchSwipeData: MutableList<Data> = mutableListOf()
     private var touchBody: TouchBody? = null
+    private lateinit var timer: Timer
+    private lateinit var timerTask: TimerTask
     private val dateFormat: SimpleDateFormat by lazy {
         SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS",
             Locale.getDefault())
@@ -89,6 +92,15 @@ open class SensorReport(
             setupSensors()
         }
         touchBody = TouchBody(user_id = "test", swipe = swipe, tap = tap)
+
+        timer= Timer()
+        timerTask= object :TimerTask(){
+            override fun run() {
+                CoroutineScope(Dispatchers.IO+job).launch {
+                    fillSensorData()
+                }
+            }
+        }
         repeater()
         CoroutineScope(Dispatchers.IO+job).launch {
             sensorFlow.collectLatest {
@@ -141,6 +153,7 @@ open class SensorReport(
 
     @Synchronized
     private fun setSensorDataEmpty() {
+        index = 0
         sensorData = FileData()
         accelerometerArray.clear()
         gyroscopeArray.clear()
@@ -254,7 +267,7 @@ open class SensorReport(
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
     }
 
-    private suspend fun fillSensorData() {
+    private fun fillSensorData() {
 
         Log.d("fillS", "${deviceMotionObject.isNotEmpty()}")
         if (deviceMotionObject.isNotEmpty()) {
@@ -273,10 +286,10 @@ open class SensorReport(
         }
         try {
             val jsonData = Gson().toJson(sensorData)
-            //val jsonTouchData = Gson().toJson(touchBody)
+            val jsonTouchData = Gson().toJson(touchBody)
             //context.writeToFileOnDisk(jsonData ,"Sensor_${systemSecondTime()}.json")
             addSensorData(jsonData)
-            //addTouchData(jsonTouchData)
+            addTouchData(jsonTouchData)
             Log.d("SENSOOR: ", jsonData)
             setSensorDataEmpty()
         } catch (e: Exception) {
@@ -287,12 +300,7 @@ open class SensorReport(
     }
 
     private fun repeater() {
-        CoroutineScope(Dispatchers.IO+job).launch {
-            delay(10000)
-            fillSensorData()
-            repeater()
-        }
-
+        timer.scheduleAtFixedRate(timerTask,30000,30000)
     }
 
     private fun getDeviceOrientation(): Int {
@@ -316,11 +324,11 @@ open class SensorReport(
         val window = activity.window
         val windowCallBack = object : Window.Callback {
             override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
-                return true
+                return activity.dispatchKeyEvent(event)
             }
 
             override fun dispatchKeyShortcutEvent(event: KeyEvent?): Boolean {
-                return false
+                return activity.dispatchKeyShortcutEvent(event)
             }
 
             override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
@@ -342,85 +350,90 @@ open class SensorReport(
                         onEventUp(event)
                     }
                 }
-                return true
+                return activity.dispatchTouchEvent(event)
             }
 
             override fun dispatchTrackballEvent(event: MotionEvent?): Boolean {
-                TODO("Not yet implemented")
+                return activity.dispatchTrackballEvent(event)
             }
 
             override fun dispatchGenericMotionEvent(event: MotionEvent?): Boolean {
-                TODO("Not yet implemented")
+                return activity.dispatchGenericMotionEvent(event)
             }
 
             override fun dispatchPopulateAccessibilityEvent(event: AccessibilityEvent?): Boolean {
-                TODO("Not yet implemented")
+                return activity.dispatchPopulateAccessibilityEvent(event)
             }
 
             override fun onCreatePanelView(featureId: Int): View? {
-                return null
+                return activity.onCreatePanelView(featureId)
             }
 
             override fun onCreatePanelMenu(featureId: Int, menu: Menu): Boolean {
-                return true
+                return activity.onCreatePanelMenu(featureId, menu)
             }
 
             override fun onPreparePanel(featureId: Int, view: View?, menu: Menu): Boolean {
-                return true
+                return activity.onPreparePanel(featureId, view, menu)
             }
 
             override fun onMenuOpened(featureId: Int, menu: Menu): Boolean {
-                TODO("Not yet implemented")
+                return activity.onMenuOpened(featureId, menu)
             }
 
             override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
-                TODO("Not yet implemented")
+                return activity.onMenuItemSelected(featureId, item)
             }
 
             override fun onWindowAttributesChanged(attrs: WindowManager.LayoutParams?) {
+                activity.onWindowAttributesChanged(attrs)
             }
 
             override fun onContentChanged() {
+                activity.onContentChanged()
             }
 
             override fun onWindowFocusChanged(hasFocus: Boolean) {
+                activity.onWindowFocusChanged(hasFocus)
             }
 
             override fun onAttachedToWindow() {
+                activity.onAttachedToWindow()
             }
 
             override fun onDetachedFromWindow() {
+                activity.onDetachedFromWindow()
             }
 
             override fun onPanelClosed(featureId: Int, menu: Menu) {
-                TODO("Not yet implemented")
+                activity.onPanelClosed(featureId, menu)
             }
 
             override fun onSearchRequested(): Boolean {
-                TODO("Not yet implemented")
+                return activity.onSearchRequested()
             }
 
             override fun onSearchRequested(searchEvent: SearchEvent?): Boolean {
-                TODO("Not yet implemented")
+                return activity.onSearchRequested(searchEvent)
             }
 
             override fun onWindowStartingActionMode(callback: ActionMode.Callback?): ActionMode? {
-                TODO("Not yet implemented")
+                return activity.onWindowStartingActionMode(callback)
             }
 
             override fun onWindowStartingActionMode(
                 callback: ActionMode.Callback?,
                 type: Int,
             ): ActionMode? {
-                TODO("Not yet implemented")
+                return activity.onWindowStartingActionMode(callback,type)
             }
 
             override fun onActionModeStarted(mode: ActionMode?) {
-                TODO("Not yet implemented")
+                activity.onActionModeStarted(mode)
             }
 
             override fun onActionModeFinished(mode: ActionMode?) {
-                TODO("Not yet implemented")
+                activity.onActionModeFinished(mode)
             }
 
         }
@@ -597,6 +610,7 @@ open class SensorReport(
         WorkManager.getInstance(context).cancelUniqueWork("SensorDataWorker")
         WorkManager.getInstance(context).cancelUniqueWork("TouchDataWorker")
         job.cancel()
+        timer.cancel()
     }
 }
 
