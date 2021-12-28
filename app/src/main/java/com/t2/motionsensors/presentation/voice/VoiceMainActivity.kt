@@ -6,11 +6,9 @@ import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.t2.motionsensors.R
 import com.t2.motionsensors.databinding.ActivityVoiceMainBinding
 
 @RequiresApi(Build.VERSION_CODES.N)
@@ -19,13 +17,14 @@ class VoiceMainActivity : AppCompatActivity() {
     private var mediaRecorder: MediaRecorder? = null
     private lateinit var binding: ActivityVoiceMainBinding
     var path = ""
+    var sensorReport: SensorReport? = null
 
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityVoiceMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        //SensorReport(this ,this)
+        sensorReport = SensorReport(this ,this)
         if (ActivityCompat.checkSelfPermission(this,
                 android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -87,5 +86,11 @@ class VoiceMainActivity : AppCompatActivity() {
             binding.stopBtn.isEnabled = true
             binding.startBtn.isEnabled = false
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        sensorReport?.stopWorkers()
+        sensorReport = null
     }
 }

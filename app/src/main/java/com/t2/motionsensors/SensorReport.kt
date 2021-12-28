@@ -47,10 +47,14 @@ open class SensorReport(
     private var magnetometer: Sensor? = null
     private var rotation: Sensor? = null
     private var sensorData = FileData()
-    private val accelerometerArray = mutableListOf<Coordinates>()
-    private val gyroscopeArray = mutableListOf<Coordinates>()
-    private val magnetometerArray = mutableListOf<Coordinates>()
-    private val deviceMotionArray = mutableListOf<DeviceMotion>()
+    @Volatile
+    private var accelerometerArray = mutableListOf<Coordinates>()
+    @Volatile
+    private var gyroscopeArray = mutableListOf<Coordinates>()
+    @Volatile
+    private var magnetometerArray = mutableListOf<Coordinates>()
+    @Volatile
+    private var deviceMotionArray = mutableListOf<DeviceMotion>()
     private var deviceMotionObject: DeviceMotion = DeviceMotion()
     private var index = 0
     private var startX: Float = 0f
@@ -73,6 +77,8 @@ open class SensorReport(
     private var isActionMove = false
     private var listener: SensorListener? = null
 
+    private val job = Job()
+
     init {
         Log.d("initialize", "initialize")
         context.showPermissionDialog()
@@ -84,7 +90,7 @@ open class SensorReport(
         }
         touchBody = TouchBody(user_id = "test", swipe = swipe, tap = tap)
         repeater()
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO+job).launch {
             sensorFlow.collectLatest {
                 //Log.d("initialize" ,"sensorFlow")
                 it?.let {
@@ -133,6 +139,7 @@ open class SensorReport(
         }
     }
 
+    @Synchronized
     private fun setSensorDataEmpty() {
         sensorData = FileData()
         accelerometerArray.clear()
@@ -192,7 +199,7 @@ open class SensorReport(
                         time = dateFormat.format(Date())
                     )
                 )
-                CoroutineScope(Dispatchers.Default).launch { sensorFlow.emit(event) }
+                CoroutineScope(Dispatchers.Default+job).launch { sensorFlow.emit(event) }
                 /*Log.d(
                     TAG,
                     "onSensorChanged x: ${event.values?.get(0)} y: ${event.values?.get(1)} z: ${
@@ -234,10 +241,10 @@ open class SensorReport(
                 )*/
             }
             Sensor.TYPE_LINEAR_ACCELERATION -> {
-                CoroutineScope(Dispatchers.Default).launch { sensorFlow.emit(event) }
+                CoroutineScope(Dispatchers.Default+job).launch { sensorFlow.emit(event) }
             }
             Sensor.TYPE_ROTATION_VECTOR -> {
-                CoroutineScope(Dispatchers.Default).launch { sensorFlow.emit(event) }
+                CoroutineScope(Dispatchers.Default+job).launch { sensorFlow.emit(event) }
             }
             else -> {
             }
@@ -265,7 +272,7 @@ open class SensorReport(
 
         }
         try {
-            val jsonData = withContext(Dispatchers.IO){Gson().toJson(sensorData)}
+            val jsonData = Gson().toJson(sensorData)
             //val jsonTouchData = Gson().toJson(touchBody)
             //context.writeToFileOnDisk(jsonData ,"Sensor_${systemSecondTime()}.json")
             addSensorData(jsonData)
@@ -280,7 +287,7 @@ open class SensorReport(
     }
 
     private fun repeater() {
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO+job).launch {
             delay(10000)
             fillSensorData()
             repeater()
@@ -458,7 +465,7 @@ open class SensorReport(
             data = touchData,
             phone_orientation = getDeviceOrientation())
         tap.add(movement)
-        val jsonData = Gson().toJson(touchBody)
+       // val jsonData = Gson().toJson(touchBody)
         //Log.d("jsonto ", jsonData)
     }
 
@@ -511,7 +518,7 @@ open class SensorReport(
 
     private fun addSensorData(jsonData: String) {
         Log.d("Mena", "addSensorData 1")
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO+job).launch {
             val filePath = context.writeToFile(jsonData, "sensor.json")
             val sensorBody = SensorBody(file = filePath,
                 user_id = User.userIdValue,
@@ -537,7 +544,7 @@ open class SensorReport(
 
     private fun addTouchData(jsonData: String) {
         Log.d("Mena", "addTouchData 1")
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO+job).launch {
             val filePath = context.writeToFile(jsonData, "touch.json")
             TouchDataWorker.startWorker(
                 context,
@@ -561,7 +568,7 @@ open class SensorReport(
 
     private fun addInfoData(userId: String, accountId: String, context: Context, jsonData: String) {
         Log.d("Mena", "addInfoData 1")
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO+job).launch {
             val filePath = context.writeToFile(jsonData, "info.json")
             //context.writeToFileOnDisk(jsonData, "info.json")
             InfoDataWorker.startWorker(
@@ -583,6 +590,13 @@ open class SensorReport(
                     }
                 }
         }
+    }
+
+    fun stopWorkers() {
+        WorkManager.getInstance(context).cancelUniqueWork("InfoDataWorker")
+        WorkManager.getInstance(context).cancelUniqueWork("SensorDataWorker")
+        WorkManager.getInstance(context).cancelUniqueWork("TouchDataWorker")
+        job.cancel()
     }
 }
 

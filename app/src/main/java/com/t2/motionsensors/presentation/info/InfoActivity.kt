@@ -16,12 +16,13 @@ import kotlinx.coroutines.launch
 class InfoActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityInfoBinding
+    private var sensorReport: SensorReport? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityInfoBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        SensorReport(this, this)
+        sensorReport = SensorReport(this, this)
 
         initView()
     }
@@ -30,5 +31,11 @@ class InfoActivity : AppCompatActivity() {
         binding.continueBtn.setOnClickListener {
             startActivity(Intent(this , VoiceMainActivity::class.java))
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        sensorReport?.stopWorkers()
+        sensorReport = null
     }
 }

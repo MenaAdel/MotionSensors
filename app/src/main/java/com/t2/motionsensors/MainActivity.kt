@@ -71,6 +71,7 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener */ {
         SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS",
             Locale.getDefault())
     }
+    var sensorReport: SensorReport? = null
     private var isActionMove = false
     private var timer: CountDownTimer? = null
 
@@ -154,7 +155,7 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener */ {
     private fun initSensorData(userId: String, accountId: String) {
         User.userIdValue = userId
         User.accountIdValue = accountId
-        SensorReport(this, this)
+        sensorReport = SensorReport(this, this)
 
         startActivity(Intent(this ,InfoActivity::class.java))
     }
@@ -460,4 +461,10 @@ class MainActivity : AppCompatActivity()/*, SensorEventListener */ {
         val distance = abs(endDistance - startDistance)
         return distance / duration
     }*/
+
+    override fun onStop() {
+        super.onStop()
+        sensorReport?.stopWorkers()
+        sensorReport = null
+    }
 }
