@@ -8,6 +8,10 @@ import com.google.gson.JsonObject
 import com.t2.motionsensors.domain.datasource.repo.BiometricImp
 import com.t2.motionsensors.domain.datasource.repo.IBiometric
 import com.t2.motionsensors.domain.entity.SensorBody
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -45,20 +49,30 @@ class SensorDataWorker(val appContext: Context, params: WorkerParameters) :
     }
 
     override suspend fun doWork(): Result {
-        val sensorBody: SensorBody? = Gson().fromJson(inputData.getString(SENSOR_BODY),
-            SensorBody::class.java)
+        return coroutineScope {
+            val sensorBody: SensorBody? = Gson().fromJson(inputData.getString(SENSOR_BODY),
+                SensorBody::class.java)
 
-        val sensorApi = sensorBody?.let { biometricRepo.addSensorData(it) }
+            val sensorApi = if (sensorBody != null) {
+                withContext (Dispatchers.IO) {
+                    biometricRepo.addSensorData(sensorBody)
+                }
+            } else {
+                null
+            }
+            //val sensorApi = sensorBody?.let {  biometricRepo.addSensorData(it) }
 
-        return if (sensorApi?.status == 200) {
-            Log.d("Worker", "Success sending sensor data")
-            val outputData = createOutputData("Success sending sensor data", OUTPUT_KEY_SENSOR)
-            Result.success(outputData)
-        } else {
-            Log.d("Worker", "Fail sending sensor: ${sensorApi?.message}")
-            val outputData =
-                createOutputData("Fail sending sensor: ${sensorApi?.message}", OUTPUT_KEY_SENSOR)
-            Result.failure(outputData)
+             if (sensorApi?.status == 200) {
+                Log.d("Worker", "Success sending sensor data")
+                val outputData = createOutputData("Success sending sensor data", OUTPUT_KEY_SENSOR)
+                Result.success(outputData)
+            } else {
+                Log.d("Worker", "Fail sending sensor: ${sensorApi?.message}")
+                val outputData =
+                    createOutputData("Fail sending sensor: ${sensorApi?.message}",
+                        OUTPUT_KEY_SENSOR)
+                Result.failure(outputData)
+            }
         }
     }
 

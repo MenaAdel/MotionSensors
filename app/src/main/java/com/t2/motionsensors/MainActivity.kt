@@ -1,5 +1,7 @@
 package com.t2.motionsensors
 
+import SensorReport
+import android.content.Intent
 import android.content.res.Configuration
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -19,8 +21,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.karumi.dexter.listener.single.PermissionListener
 import com.t2.motionsensors.databinding.ActivityMainBinding
+import com.t2.motionsensors.domain.datasource.database.ACCOUNT_ID
+import com.t2.motionsensors.domain.datasource.database.SensorPreferences
+import com.t2.motionsensors.domain.datasource.database.USER_ID
+import com.t2.motionsensors.domain.datasource.database.User
 import com.t2.motionsensors.domain.datasource.storage.writeToFileOnDisk
 import com.t2.motionsensors.domain.entity.*
+import com.t2.motionsensors.presentation.info.InfoActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -29,7 +36,7 @@ import java.util.*
 import kotlin.math.abs
 
 @RequiresApi(Build.VERSION_CODES.N)
-class MainActivity : AppCompatActivity(), SensorEventListener {
+class MainActivity : AppCompatActivity()/*, SensorEventListener */ {
 
     private lateinit var viewModel: MainViewModel
     private lateinit var binding: ActivityMainBinding
@@ -72,6 +79,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        initView()
         /*val sensorReport = SensorReport(this, this)
         sensorReport.setSensorListener(object : SensorListener {
             override fun onApiValueChanged(response: String) {
@@ -79,7 +87,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             }
         }
         )*/
-        showPermissionDialog()
+        /*showPermissionDialog()
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         setupSensors()
         initRecycler()
@@ -129,10 +137,28 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 }
             }
         }
-        setupClicking()
+        setupClicking()*/
     }
 
-    private fun sendInfoData() {
+    private fun initView() {
+        with(binding) {
+            continueBtn.apply {
+
+                setOnClickListener {
+                    initSensorData(userId.text.toString(), accountId.text.toString())
+                }
+            }
+        }
+    }
+
+    private fun initSensorData(userId: String, accountId: String) {
+        User.userIdValue = userId
+        User.accountIdValue = accountId
+        SensorReport(this, this)
+
+        startActivity(Intent(this ,InfoActivity::class.java))
+    }
+    /*private fun sendInfoData() {
         if (isFirstTime) {
             viewModel.addInfoModel(binding.userId.text.toString(),
                 binding.accountId.text.toString(),
@@ -143,12 +169,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private fun setupClicking() {
         with(binding) {
-            startBtn.setOnClickListener {
+            *//*startBtn.setOnClickListener {
                 counterTicker()
             }
             endBtn.setOnClickListener {
                 stopCounter()
-            }
+            }*//*
         }
     }
 
@@ -159,7 +185,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         var counter = 0
         timer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                binding.counter.text = "${counter++}"
+                *//*binding.counter.text = "${counter++}"*//*
             }
 
             override fun onFinish() {}
@@ -191,13 +217,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         for (i in 1..20) {
             data.add(ItemsViewModel(R.drawable.ic_launcher_background, "Item $i"))
         }
-        with(binding.recyclerview) {
+        *//*with(binding.recyclerview) {
             layoutManager = LinearLayoutManager(context)
             adapter = CustomAdapter(data)
-        }
+        }*//*
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    *//*@RequiresApi(Build.VERSION_CODES.O)
     private fun setupSensors() {
         val sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
@@ -231,7 +257,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         rotation?.let {
             sensorManager.registerListener(this, it, 10000)
         } ?: Log.d(TAG, "rotation not supported")
-    }
+    }*//*
 
     companion object {
         private const val TAG = "MainActivityScreen"
@@ -254,12 +280,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 )
                 lifecycleScope.launch { sensorFlow.emit(event) }
 
-                /*Log.d(
+                *//*Log.d(
                     TAG,
                     "onSensorChanged x: ${event.values?.get(0)} y: ${event.values?.get(1)} z: ${
                         event.values?.get(2)
                     }"
-                )*/
+                )*//*
             }
             Sensor.TYPE_GYROSCOPE -> {
                 gyroscopeArray.add(
@@ -270,12 +296,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         time = dateFormat.format(Date())
                     )
                 )
-                /*Log.d(
+                *//*Log.d(
                     TAG,
                     "onSensorChanged x: ${event.values?.get(0)} y: ${event.values?.get(1)} z: ${
                         event.values?.get(2)
                     }"
-                )*/
+                )*//*
 
             }
             Sensor.TYPE_MAGNETIC_FIELD -> {
@@ -287,12 +313,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         time = dateFormat.format(Date())
                     )
                 )
-                /*Log.d(
+                *//*Log.d(
                     TAG,
                     "onSensorChanged x: ${event.values?.get(0)} y: ${event.values?.get(1)} z: ${
                         event.values?.get(2)
                     }"
-                )*/
+                )*//*
             }
             Sensor.TYPE_LINEAR_ACCELERATION -> {
                 lifecycleScope.launch { sensorFlow.emit(event) }
@@ -433,5 +459,5 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     ): Float {
         val distance = abs(endDistance - startDistance)
         return distance / duration
-    }
+    }*/
 }

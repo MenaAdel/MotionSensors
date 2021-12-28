@@ -5,6 +5,9 @@ import android.util.Log
 import androidx.work.*
 import com.t2.motionsensors.domain.datasource.repo.BiometricImp
 import com.t2.motionsensors.domain.datasource.repo.IBiometric
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class TouchDataWorker(appContext: Context, params: WorkerParameters) :
@@ -21,7 +24,7 @@ class TouchDataWorker(appContext: Context, params: WorkerParameters) :
             context: Context,
             userId: String,
             accountId: String,
-            filePath: String
+            filePath: String,
         ) {
             val sensorDataWorker =
                 OneTimeWorkRequestBuilder<TouchDataWorker>()
@@ -47,20 +50,27 @@ class TouchDataWorker(appContext: Context, params: WorkerParameters) :
     }
 
     override suspend fun doWork(): Result {
-        val file = File(inputData.getString(FILE_PATH).toString())
-        val id = inputData.getString(USER_ID).toString()
-        val accountId = inputData.getString(ACCOUNT_ID).toString()
-        val touchApi =  biometricRepo.addTouchData(accountId ,id ,file ,"touch_data")
+        return coroutineScope {
+            val file = File(inputData.getString(FILE_PATH).toString())
+            val id = inputData.getString(USER_ID).toString()
+            val accountId = inputData.getString(ACCOUNT_ID).toString()
+            val touchApi = withContext(Dispatchers.IO) {
+                biometricRepo.addTouchData(accountId,
+                    id,
+                    file,
+                    "touch_data")
+            }
 
-        return if (touchApi.status == 200) {
-            Log.d("Worker", "Success sending touch data")
-            val outputData = createOutputData("Success sending touch data" , OUTPUT_KEY_TOUCH)
-            Result.success(outputData)
-        } else {
-            Log.d("Worker", "Fail sending touch: ${touchApi.message}")
-            val outputData = createOutputData("Fail sending touch: ${touchApi.message}" ,
-                OUTPUT_KEY_TOUCH)
-            Result.failure(outputData)
+            if (touchApi.status == 200) {
+                Log.d("Worker", "Success sending touch data")
+                val outputData = createOutputData("Success sending touch data", OUTPUT_KEY_TOUCH)
+                Result.success(outputData)
+            } else {
+                Log.d("Worker", "Fail sending touch: ${touchApi.message}")
+                val outputData = createOutputData("Fail sending touch: ${touchApi.message}",
+                    OUTPUT_KEY_TOUCH)
+                Result.failure(outputData)
+            }
         }
     }
 
