@@ -14,9 +14,9 @@ import com.t2.motionsensors.databinding.ActivityVoiceMainBinding
 @RequiresApi(Build.VERSION_CODES.N)
 class VoiceMainActivity : AppCompatActivity() {
 
-    private var mediaRecorder: MediaRecorder? = null
+    private val mediaRecorder = MediaRecorder()
     private lateinit var binding: ActivityVoiceMainBinding
-    var path = ""
+    val path: String  by lazy {cacheDir.absolutePath + "myRec.3gp" }
     var sensorReport: SensorReport? = null
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -42,25 +42,17 @@ class VoiceMainActivity : AppCompatActivity() {
         grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 111 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            binding.startBtn.isEnabled = true
-            mediaRecorder = MediaRecorder()
-            path = cacheDir.absolutePath + "myRec.3gp"
-        } else {
-            binding.startBtn.isEnabled = false
-        }
+        binding.startBtn.isEnabled = requestCode == 111 && grantResults[0] == PackageManager.PERMISSION_GRANTED
 
     }
 
     private fun initView() {
         with(binding) {
-            startBtn.isEnabled = false
-            stopBtn.isEnabled = false
             startBtn.setOnClickListener {
                 startRecording()
             }
             stopBtn.setOnClickListener {
-                mediaRecorder?.stop()
+                mediaRecorder.stop()
                 startBtn.isEnabled = true
                 stopBtn.isEnabled = false
             }
@@ -76,7 +68,7 @@ class VoiceMainActivity : AppCompatActivity() {
     }
 
     private fun startRecording() {
-        mediaRecorder?.apply {
+        mediaRecorder.apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
             setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
