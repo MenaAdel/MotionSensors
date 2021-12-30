@@ -11,7 +11,7 @@ import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.single.DialogOnDeniedPermissionListener
 import com.karumi.dexter.listener.single.PermissionListener
 
-fun Context.requestPermission():String{
+fun Context.requestPermission(permission: String = Manifest.permission.READ_PHONE_STATE):String{
     var id = ""
     Dexter.withContext(this)
         .withPermission(Manifest.permission.READ_PHONE_STATE)

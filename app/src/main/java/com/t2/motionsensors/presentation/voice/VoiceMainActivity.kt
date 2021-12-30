@@ -1,6 +1,7 @@
 package com.t2.motionsensors.presentation.voice
 
 import SensorReport
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
@@ -10,6 +11,7 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.t2.motionsensors.databinding.ActivityVoiceMainBinding
+import com.t2.motionsensors.presentation.camera.CameraActivity
 
 @RequiresApi(Build.VERSION_CODES.N)
 class VoiceMainActivity : AppCompatActivity() {
@@ -63,6 +65,10 @@ class VoiceMainActivity : AppCompatActivity() {
                     prepare()
                     start()
                 }
+            }
+
+            nextBtn.setOnClickListener {
+                startActivity(Intent(this@VoiceMainActivity , CameraActivity::class.java))
             }
         }
     }

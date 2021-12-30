@@ -8,4 +8,6 @@
     <string name="end">end</string>
     <string name="setting">Settings</string>
     <string name="continue_text">Continue</string>
+    <string name="permission_request_camera_access">Request Camera access ?</string>
+    <string name="permission_request_stoarg_contact">Allow Ibraq access to your contacts and your device\'s photos, media, and files.</string>
 </resources>

@@ -11,20 +11,25 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage"/>
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
         android:name=".AppController"
         android:allowBackup="true"
-        android:requestLegacyExternalStorage="true"
-        android:isolatedProcess="true"
         android:icon="@mipmap/ic_launcher"
+        android:isolatedProcess="true"
         android:label="@string/app_name"
+        android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MotionSensors"
         android:usesCleartextTraffic="true">
+        <activity
+            android:name=".presentation.camera.CameraActivity"
+            android:exported="false" />
         <activity
             android:name=".presentation.voice.VoiceMainActivity"
             android:exported="false" />
