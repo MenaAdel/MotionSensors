@@ -7,4 +7,8 @@
     <string name="start">start</string>
     <string name="end">end</string>
     <string name="setting">Settings</string>
+    <string name="alert_one">لا إله إلا الله محمد رسول الله.</string>
+    <string name="alert_two">وحدك يمكنك أن تنجز القليل سوياً يمكننا أن نصنع المعجزات.</string>
+    <string name="alert_three">أهلاً وسهلاً بك في بيتك الثاني يومك سعيد.</string>
+    <string name="alert_four">اسمح لي بتسجيل الدخول من البوابة.</string>
 </resources>

@@ -6,5 +6,5 @@ import java.io.File
 
 interface IBiometric {
     suspend fun addSensorData(body: SensorBody): ApiResponse
-    suspend fun addTouchData(accountId: String ,user_id: String ,file: File ,type: String): ApiResponse
+    suspend fun addTouchData(accountId: String? ,user_id: String ,file: File ,type: String): ApiResponse
 }

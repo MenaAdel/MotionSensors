@@ -21,7 +21,7 @@ class InfoDataWorker(appContext: Context, params: WorkerParameters) :
         fun startWorker(
             context: Context,
             userId: String,
-            accountId: String,
+            accountId: String?,
             filePath: String,
         ) {
             val sensorDataWorker =
@@ -50,7 +50,7 @@ class InfoDataWorker(appContext: Context, params: WorkerParameters) :
     override suspend fun doWork(): Result {
         val file = File(inputData.getString(FILE_PATH).toString())
         val id = inputData.getString(USER_ID).toString()
-        val accountId = inputData.getString(ACCOUNT_ID).toString()
+        val accountId = inputData.getString(ACCOUNT_ID)
 
         val touchApi = biometricRepo.addTouchData(accountId ,id, file, "info")
 

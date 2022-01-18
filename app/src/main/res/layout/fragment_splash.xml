@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditText
+        android:id="@+id/user_id"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="30dp"
+        android:hint="User Id"
+        app:layout_constraintBottom_toTopOf="@id/account_id"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/account_id"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Account Id"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@id/user_id"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/continueBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="30dp"
+        android:text="Continue"
+        app:layout_constraintEnd_toEndOf="@id/account_id"
+        app:layout_constraintStart_toStartOf="@id/account_id"
+        app:layout_constraintTop_toBottomOf="@id/account_id" />
+
+    <TextView
+        android:id="@+id/account_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:textSize="18sp"
+        android:text="Select account id"
+        app:layout_constraintEnd_toEndOf="@+id/user_id"
+        app:layout_constraintStart_toEndOf="@+id/account_id"
+        app:layout_constraintTop_toTopOf="@+id/account_id" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

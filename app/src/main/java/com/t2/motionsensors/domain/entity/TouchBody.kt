@@ -1,7 +1,7 @@
 package com.t2.motionsensors.domain.entity
 
 data class TouchBody(
-    val user_id: String = "",
+    var user_id: String = "",
     var swipe: List<Movement>? = null,
     var tap: List<Movement>? = null,
 )

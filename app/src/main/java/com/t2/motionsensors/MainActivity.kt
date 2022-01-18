@@ -8,29 +8,32 @@ import android.hardware.SensorManager
 import android.icu.text.SimpleDateFormat
 import android.os.Build
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.util.Log
 import android.view.MotionEvent
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.navigation.NavController
+import androidx.navigation.findNavController
 import com.google.gson.Gson
-import com.karumi.dexter.listener.single.PermissionListener
 import com.t2.motionsensors.databinding.ActivityMainBinding
 import com.t2.motionsensors.domain.datasource.storage.writeToFileOnDisk
 import com.t2.motionsensors.domain.entity.*
+import com.t2.motionsensors.presentation.EndSessionListener
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.*
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
 
 @RequiresApi(Build.VERSION_CODES.N)
-class MainActivity : AppCompatActivity(), SensorEventListener {
+class MainActivity : AppCompatActivity(), SensorEventListener, EndSessionListener {
 
+    var navController: NavController? = null
     private lateinit var viewModel: MainViewModel
     private lateinit var binding: ActivityMainBinding
     private val sensorFlow: MutableSharedFlow<SensorEvent> = MutableSharedFlow()
@@ -41,10 +44,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var magnetometer: Sensor? = null
     private var rotation: Sensor? = null
     private var sensorData = FileData()
-    private val accelerometerArray = mutableListOf<Coordinates>()
-    private val gyroscopeArray = mutableListOf<Coordinates>()
-    private val magnetometerArray = mutableListOf<Coordinates>()
-    private val deviceMotionArray = mutableListOf<DeviceMotion>()
+    private val accelerometerArray = CopyOnWriteArrayList<Coordinates>()
+    private val gyroscopeArray = CopyOnWriteArrayList<Coordinates>()
+    private val magnetometerArray = CopyOnWriteArrayList<Coordinates>()
+    private val deviceMotionArray = CopyOnWriteArrayList<DeviceMotion>()
     private var deviceMotionObject: DeviceMotion = DeviceMotion()
     private var index = 0
     private var startX: Float = 0f
@@ -62,29 +65,35 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var touchBody: TouchBody? = null
     private val dateFormat: SimpleDateFormat by lazy {
         SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS",
-            Locale.getDefault())
+            Locale("es", "ES"))
     }
     private var isActionMove = false
-    private var timer: CountDownTimer? = null
+    private lateinit var timer: Timer
+    private lateinit var timerTask: TimerTask
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        /*val sensorReport = SensorReport(this, this)
-        sensorReport.setSensorListener(object : SensorListener {
-            override fun onApiValueChanged(response: String) {
-                Log.d("Activity", response)
-            }
-        }
-        )*/
+        navController = findNavController(R.id.nav_host_fragment)
         showPermissionDialog()
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         setupSensors()
-        initRecycler()
-        touchBody = TouchBody(user_id = "test", swipe = swipe, tap = tap)
-
+        touchBody = TouchBody(user_id = Users.userId, swipe = swipe, tap = tap)
+        timer= Timer()
+        timerTask= object :TimerTask(){
+            override fun run() {
+                CoroutineScope(Dispatchers.IO).launch {
+                    if (Users.userId.isNotEmpty()) {
+                        fillSensorData()
+                    } else {
+                        setSensorDataEmpty()
+                    }
+                }
+            }
+        }
+        timer.scheduleAtFixedRate(timerTask,30000,30000)
         lifecycleScope.launch {
             sensorFlow.collectLatest {
                 when (it.sensor.type) {
@@ -129,50 +138,14 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 }
             }
         }
-        setupClicking()
     }
 
     private fun sendInfoData() {
-        if (isFirstTime) {
-            viewModel.addInfoModel(binding.userId.text.toString(),
-                binding.accountId.text.toString(),
+        if (Users.isFirstTime) {
+            viewModel.addInfoModel(Users.userId,
+                Users.accountId,
                 this)
-            isFirstTime = false
-        }
-    }
-
-    private fun setupClicking() {
-        with(binding) {
-            startBtn.setOnClickListener {
-                counterTicker()
-            }
-            endBtn.setOnClickListener {
-                stopCounter()
-            }
-        }
-    }
-
-    private fun counterTicker() {
-        // Create the timer flow
-        sendInfoData()
-        setSensorDataEmpty()
-        var counter = 0
-        timer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                binding.counter.text = "${counter++}"
-            }
-
-            override fun onFinish() {}
-        }
-        timer?.start()
-    }
-
-    private fun stopCounter() {
-        try {
-            timer?.cancel()
-            lifecycleScope.launch { fillSensorData() }
-        } catch (e: Exception) {
-            Log.d("Exception", "Exception: ${e.message}")
+            Users.isFirstTime = false
         }
     }
 
@@ -183,18 +156,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         magnetometerArray.clear()
         deviceMotionArray.clear()
         index = 0
-    }
-
-    private fun initRecycler() {
-        val data = ArrayList<ItemsViewModel>()
-
-        for (i in 1..20) {
-            data.add(ItemsViewModel(R.drawable.ic_launcher_background, "Item $i"))
-        }
-        with(binding.recyclerview) {
-            layoutManager = LinearLayoutManager(context)
-            adapter = CustomAdapter(data)
-        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -235,7 +196,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     companion object {
         private const val TAG = "MainActivityScreen"
-        var isFirstTime: Boolean = true
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
@@ -309,6 +269,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun fillSensorData() {
+        touchBody?.user_id = Users.userId
+        sendInfoData()
         //Log.d("fillS", "${deviceMotionObject.isNotEmpty()}")
         if (deviceMotionObject.isNotEmpty()) {
             deviceMotionArray.add(index, deviceMotionObject)
@@ -317,6 +279,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
 
         sensorData.apply {
+            user_id = Users.userId
             accelerometer = accelerometerArray
             gyroscope = gyroscopeArray
             magnetometer = magnetometerArray
@@ -324,12 +287,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
         val jsonData = Gson().toJson(sensorData)
         val jsonTouchData = Gson().toJson(touchBody)
-        writeToFileOnDisk(jsonData, "Android_Scenario_${systemSecondTime()}.json")
-        viewModel.addSensorData(userId = binding.userId.text.toString(),
-            accountId = binding.accountId.text.toString(), this, jsonData)
-        viewModel.addTouchData(userId = binding.userId.text.toString(),
-            accountId = binding.accountId.text.toString(), this, jsonTouchData)
-        //Log.d("SENSOOR: ", jsonData)
+        viewModel.addSensorData(userId = Users.userId,
+            accountId = Users.accountId, this, jsonData)
+        viewModel.addTouchData(userId = Users.userId,
+            accountId = Users.accountId, this, jsonTouchData)
+        //writeToFileOnDisk(jsonData ,"sensor_${dateFormat.format(Date())}.json")
+        setSensorDataEmpty()
 
     }
 
@@ -401,7 +364,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             data = touchData,
             phone_orientation = getDeviceOrientation())
         tap.add(movement)
-        val jsonData = Gson().toJson(touchBody)
+        //val jsonData = Gson().toJson(touchBody)
         //Log.d("jsonto ", jsonData)
     }
 
@@ -411,8 +374,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             data = touchSwipeData,
             phone_orientation = getDeviceOrientation())
         swipe.add(movement)
-        val jsonData = Gson().toJson(touchBody)
-        Log.d("json touch body is: ", jsonData)
+        //val jsonData = Gson().toJson(touchBody)
+       // Log.d("json touch body is: ", jsonData)
     }
 
     private fun resetData() {
@@ -433,5 +396,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     ): Float {
         val distance = abs(endDistance - startDistance)
         return distance / duration
+    }
+
+    override fun onEndSession() {
+        fillSensorData()
     }
 }
