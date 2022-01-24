@@ -1,9 +1,11 @@
 package com.t2.motionsensors.domain.entity
 
+import java.util.concurrent.CopyOnWriteArrayList
+
 data class TouchBody(
     var user_id: String = "",
-    var swipe: List<Movement>? = null,
-    var tap: List<Movement>? = null,
+    var swipe: CopyOnWriteArrayList<Movement>? = null,
+    var tap: CopyOnWriteArrayList<Movement>? = null,
 )
 
 data class Movement(

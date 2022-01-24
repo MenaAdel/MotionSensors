@@ -58,8 +58,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener, EndSessionListene
     private var moveY: Float = 0f
     private var startTime: Long = 0L
     private var endTime: Long = 0L
-    private var tap: MutableList<Movement> = mutableListOf()
-    private var swipe: MutableList<Movement> = mutableListOf()
+    private var tap: CopyOnWriteArrayList<Movement> = CopyOnWriteArrayList()
+    private var swipe: CopyOnWriteArrayList<Movement> = CopyOnWriteArrayList()
     private var touchData: MutableList<Data> = mutableListOf()
     private var touchSwipeData: MutableList<Data> = mutableListOf()
     private var touchBody: TouchBody? = null
@@ -400,5 +400,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener, EndSessionListene
 
     override fun onEndSession() {
         fillSensorData()
+        Users.apply {
+            userId = ""
+            accountId = null
+        }
     }
 }
