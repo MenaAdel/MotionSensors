@@ -9,8 +9,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.view.get
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.NavHostFragment
 import com.t2.motionsensors.R
@@ -47,6 +51,8 @@ class VoiceFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+
+        setUpIndicator()
         initView()
     }
 
@@ -68,43 +74,21 @@ class VoiceFragment : Fragment() {
 
     private fun initView() {
         with(binding) {
-            playBtn.isEnabled = false
-            stopBtn.isEnabled = false
-            nextBtn.isEnabled = false
+            continueBtn.isEnabled = false
+            sayingText.text = context?.resources?.getText(R.string.alert_one)
+
             startBtn.setOnClickListener {
-                when(counter) {
-                    0 -> showAlert(getString(R.string.alert_one))
-                    1 -> showAlert(getString(R.string.alert_two))
-                    2 -> showAlert(getString(R.string.alert_three))
-                    3 -> showAlert(getString(R.string.alert_four))
-                }
+                startRecording()
             }
-            stopBtn.setOnClickListener {
-                mediaRecorder.stop()
-                startBtn.isEnabled = true
-                playBtn.isEnabled = true
-                stopBtn.isEnabled = false
+
+
+            continueBtn.setOnClickListener {
                 counter++
                 updateCheckedValues()
             }
-            playBtn.setOnClickListener {
-                val mediaPlayer = MediaPlayer()
-                try {
-                    mediaPlayer.apply {
-                        setDataSource(path)
-                        prepare()
-                        start()
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(activity, "No voice recorded", Toast.LENGTH_LONG).show()
-                }
-            }
 
-            nextBtn.setOnClickListener {
-                NavHostFragment.findNavController(this@VoiceFragment)
-                    .navigate(R.id.action_voiceFragment_to_cameraFragment)
-            }
         }
+
     }
 
     override fun onRequestPermissionsResult(
@@ -132,39 +116,98 @@ class VoiceFragment : Fragment() {
             setOutputFile(path)
             prepare()
             start()
-            binding.stopBtn.isEnabled = true
-            binding.startBtn.isEnabled = false
+            binding.startBtn.setImageResource(R.drawable.ic_baseline_stop_24)
+            binding.startBtn.isEnabled = true
+            binding.startBtn.setOnClickListener {
+                mediaRecorder.stop()
+                binding.continueBtn.isEnabled = true
+
+                binding.startBtn.setImageResource(R.drawable.ic_baseline_play_circle_filled_24)
+                playRecord()
+            }
+
+        }
+    }
+
+    private fun playRecord(){
+        with(binding){
+            startBtn.setOnClickListener {
+                val mediaPlayer = MediaPlayer()
+                try {
+                    mediaPlayer.apply {
+                        setDataSource(path)
+                        prepare()
+                        start()
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(activity, "No voice recorded", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
     private fun updateCheckedValues() {
-        with(binding) {
-            when (counter) {
-                1 -> {
-                    checkOne.setImageResource(R.drawable.ic_baseline_radio_button_checked_24)
-                }
-                2 -> {
-                    checkTwo.setImageResource(R.drawable.ic_baseline_radio_button_checked_24)
-                }
-                3 -> {
-                    checkThree.setImageResource(R.drawable.ic_baseline_radio_button_checked_24)
-                }
-                4 -> {
-                    checkFour.setImageResource(R.drawable.ic_baseline_radio_button_checked_24)
-                    nextBtn.isEnabled = true
-                }
+        when (counter) {
+            1 -> {
+                setUpView(context?.resources?.getText(R.string.alert_two).toString())
+                setCurrentIndicator(0)
             }
+            2 -> {
+                setUpView(context?.resources?.getText(R.string.alert_three).toString())
+                setCurrentIndicator(1)
+            }
+            3 -> {
+                setUpView(context?.resources?.getText(R.string.alert_four).toString())
+                setCurrentIndicator(2)
+            }
+            4 -> {
+                NavHostFragment.findNavController(this@VoiceFragment)
+                    .navigate(R.id.action_voiceFragment_to_cameraFragment)
+            }
+
         }
     }
 
-    private fun showAlert(text: String) {
-        AlertDialog.Builder(activity)
-            .setTitle("You should say")
-            .setMessage(text)
-            .setOnDismissListener {
+    private fun setUpView(text: String) {
+        with(binding) {
+            sayingText.text = text
+            startBtn.setImageResource(R.drawable.ic_microphone_342)
+            continueBtn.isEnabled = false
+            startBtn.setOnClickListener {
                 startRecording()
             }
-            .show()
+
+        }
+    }
+
+
+
+    private fun setUpIndicator() {
+        val indicators = arrayOfNulls<ImageView>(4)
+        val layoutParams: LinearLayout.LayoutParams =
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+        layoutParams.setMargins(8, 0, 8, 0)
+        for (i in indicators.indices) {
+            indicators[i] = ImageView(context)
+            indicators[i].apply {
+                this?.setImageDrawable(
+                    AppCompatResources.getDrawable(context, R.drawable.indicator_inactive)
+                )
+                this?.layoutParams = layoutParams
+            }
+            viewBinding.indicatorsContainer.addView(indicators[i])
+
+        }
+    }
+
+
+    private fun setCurrentIndicator(index: Int) {
+        val imageView = viewBinding.indicatorsContainer[index] as ImageView
+        imageView.setImageDrawable(
+            context?.let { AppCompatResources.getDrawable(it, R.drawable.indicator_active) }
+        )
 
     }
+
 }
