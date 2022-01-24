@@ -122,33 +122,49 @@ class VoiceFragment : Fragment() {
                 mediaRecorder.stop()
                 binding.continueBtn.isEnabled = true
 
-
+                binding.startBtn.setImageResource(R.drawable.ic_baseline_play_circle_filled_24)
+                playRecord()
             }
 
         }
     }
 
-    private fun updateCheckedValues() {
-        with(binding) {
-            when (counter) {
-                1 -> {
-                    setUpView(context?.resources?.getText(R.string.alert_two).toString())
-                    setCurrentIndicator(0)
+    private fun playRecord(){
+        with(binding){
+            startBtn.setOnClickListener {
+                val mediaPlayer = MediaPlayer()
+                try {
+                    mediaPlayer.apply {
+                        setDataSource(path)
+                        prepare()
+                        start()
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(activity, "No voice recorded", Toast.LENGTH_LONG).show()
                 }
-                2 -> {
-                    setUpView(context?.resources?.getText(R.string.alert_three).toString())
-                    setCurrentIndicator(1)
-                }
-                3 -> {
-                    setUpView(context?.resources?.getText(R.string.alert_four).toString())
-                    setCurrentIndicator(2)
-                }
-                4 -> {
-                    NavHostFragment.findNavController(this@VoiceFragment)
-                        .navigate(R.id.action_voiceFragment_to_cameraFragment)
-                }
-
             }
+        }
+    }
+
+    private fun updateCheckedValues() {
+        when (counter) {
+            1 -> {
+                setUpView(context?.resources?.getText(R.string.alert_two).toString())
+                setCurrentIndicator(0)
+            }
+            2 -> {
+                setUpView(context?.resources?.getText(R.string.alert_three).toString())
+                setCurrentIndicator(1)
+            }
+            3 -> {
+                setUpView(context?.resources?.getText(R.string.alert_four).toString())
+                setCurrentIndicator(2)
+            }
+            4 -> {
+                NavHostFragment.findNavController(this@VoiceFragment)
+                    .navigate(R.id.action_voiceFragment_to_cameraFragment)
+            }
+
         }
     }
 
@@ -164,17 +180,6 @@ class VoiceFragment : Fragment() {
         }
     }
 
-
-    private fun showAlert(text: String) {
-        AlertDialog.Builder(activity)
-            .setTitle("You should say")
-            .setMessage(text)
-            .setOnDismissListener {
-                startRecording()
-            }
-            .show()
-
-    }
 
 
     private fun setUpIndicator() {
