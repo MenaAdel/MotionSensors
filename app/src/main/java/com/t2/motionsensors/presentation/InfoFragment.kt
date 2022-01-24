@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.NavHostFragment
 import com.t2.motionsensors.R
@@ -29,8 +30,32 @@ class InfoFragment : Fragment() {
 
     private fun initView() {
         binding?.continueBtn?.setOnClickListener {
-            NavHostFragment.findNavController(this@InfoFragment)
-                .navigate(R.id.action_infoFragment_to_voiceFragment)
+            validateInfo()
         }
+    }
+
+    private fun validateInfo() {
+        binding?.apply {
+            when {
+                passwordEdt.text.toString() != confirmPasswordEdt.text.toString() ->
+                    getString(R.string.password_confirm).showToast()
+                firstEdt.text.toString().isNotEmpty() && secondEdt.text.toString().isNotEmpty() &&
+                        jobNumberEdt.text.toString().isNotEmpty() &&
+                        emailEdt.text.toString().isNotEmpty() &&
+                        passwordEdt.text.toString().isNotEmpty() &&
+                        confirmPasswordEdt.text.toString().isNotEmpty() ->
+                    NavHostFragment.findNavController(this@InfoFragment)
+                        .navigate(R.id.action_infoFragment_to_voiceFragment)
+                else -> {
+                    getString(R.string.fill_data).showToast()
+
+                }
+
+            }
+        }
+    }
+
+    private fun String.showToast() {
+        Toast.makeText(requireContext(), this, Toast.LENGTH_LONG).show()
     }
 }

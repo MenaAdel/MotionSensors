@@ -34,7 +34,7 @@ class MainViewModel() : ViewModel() {
         val deviceDetails = DeviceDetails(
             deviceId = context.requestPermission(),
             carrier = carrierName,
-            userId = userId,
+            userId = userId.lowercase(),
             phoneOS = "android API ${Build.VERSION.SDK_INT}",
             deviceType = getDeviceName(),
             screenSpecs = ScreenSpecs(
@@ -52,7 +52,7 @@ class MainViewModel() : ViewModel() {
     fun addSensorData(userId: String, accountId: String?, context: Context, jsonData: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val filePath = context.writeToFile(jsonData, "${userId}_sensor_${dateFormat.format(Date())}.json")
-            val sensorBody = SensorBody(user_id = userId, account_id = accountId, file = filePath)
+            val sensorBody = SensorBody(user_id = userId.lowercase(), account_id = accountId, file = filePath)
             SensorDataWorker.startWorker(
                 context,
                 sensorBody
@@ -65,7 +65,7 @@ class MainViewModel() : ViewModel() {
             val filePath = context.writeToFile(jsonData, "${userId}_touch_${dateFormat.format(Date())}.json")
             TouchDataWorker.startWorker(
                 context,
-                userId,
+                userId.lowercase(),
                 accountId = accountId,
                 filePath.toString()
             )
@@ -77,7 +77,7 @@ class MainViewModel() : ViewModel() {
             val filePath = context.writeToFile(jsonData, "info.json")
             InfoDataWorker.startWorker(
                 context,
-                userId,
+                userId.lowercase(),
                 accountId = accountId,
                 filePath.toString()
             )

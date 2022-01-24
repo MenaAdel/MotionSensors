@@ -11,4 +11,6 @@
     <string name="alert_two">وحدك يمكنك أن تنجز القليل سوياً يمكننا أن نصنع المعجزات.</string>
     <string name="alert_three">أهلاً وسهلاً بك في بيتك الثاني يومك سعيد.</string>
     <string name="alert_four">اسمح لي بتسجيل الدخول من البوابة.</string>
+    <string name="password_confirm">Confirm password must equal to password</string>
+    <string name="fill_data">Please, fill all data</string>
 </resources>

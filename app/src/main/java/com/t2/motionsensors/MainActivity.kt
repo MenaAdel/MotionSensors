@@ -269,7 +269,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, EndSessionListene
     }
 
     private fun fillSensorData() {
-        touchBody?.user_id = Users.userId
+        touchBody?.user_id = Users.userId.lowercase()
         sendInfoData()
         //Log.d("fillS", "${deviceMotionObject.isNotEmpty()}")
         if (deviceMotionObject.isNotEmpty()) {
@@ -279,7 +279,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, EndSessionListene
         }
 
         sensorData.apply {
-            user_id = Users.userId
+            user_id = Users.userId.lowercase()
             accelerometer = accelerometerArray
             gyroscope = gyroscopeArray
             magnetometer = magnetometerArray
