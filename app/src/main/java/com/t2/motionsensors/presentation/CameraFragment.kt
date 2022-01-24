@@ -55,10 +55,7 @@ class CameraFragment : Fragment() {
             capturePhoto()
         }
         binding?.signUp?.setOnClickListener {
-            Users.apply {
-                userId = ""
-                accountId = null
-            }
+
             listener?.onEndSession()
             NavHostFragment.findNavController(this@CameraFragment)
                 .navigate(R.id.action_cameraFragment_to_splashFragment)

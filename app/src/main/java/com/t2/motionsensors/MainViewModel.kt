@@ -79,7 +79,8 @@ class MainViewModel() : ViewModel() {
                 context,
                 userId.lowercase(),
                 accountId = accountId,
-                filePath.toString()
+                filePath.toString(),
+                jsonData
             )
         }
     }
