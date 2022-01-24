@@ -16,6 +16,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
+import androidx.work.WorkManager
 import com.google.gson.Gson
 import com.t2.motionsensors.databinding.ActivityMainBinding
 import com.t2.motionsensors.domain.datasource.storage.writeToFileOnDisk
@@ -404,5 +405,15 @@ class MainActivity : AppCompatActivity(), SensorEventListener, EndSessionListene
             userId = ""
             accountId = null
         }
+    }
+
+    override fun onDestroy() {
+        endWorker()
+        super.onDestroy()
+    }
+    private fun endWorker(){
+        WorkManager.getInstance(this).cancelUniqueWork("InfoDataWorker")
+        WorkManager.getInstance(this).cancelUniqueWork("SensorDataWorker")
+        WorkManager.getInstance(this).cancelUniqueWork("TouchDataWorker")
     }
 }

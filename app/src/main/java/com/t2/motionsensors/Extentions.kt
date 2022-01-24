@@ -23,7 +23,7 @@ fun Context.getDeviceIMEI(): String {
     return if (VERSION.SDK_INT >= VERSION_CODES.Q) {
         Settings.Secure.getString(
             contentResolver,
-            Settings.Secure.ANDROID_ID)
+            Settings.Secure.ANDROID_ID) ?:""
     } else {
         val ts: String = Context.TELEPHONY_SERVICE
         val mTelephonyMgr = getSystemService(ts) as TelephonyManager?
@@ -32,7 +32,7 @@ fun Context.getDeviceIMEI(): String {
         } else {
             return Settings.Secure.getString(
                 contentResolver,
-                Settings.Secure.ANDROID_ID)
+                Settings.Secure.ANDROID_ID) ?:""
         }
     }
 }

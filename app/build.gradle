@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    compileSdk 30
+    compileSdk 31
 
     defaultConfig {
         applicationId "com.t2.motionsensors"
@@ -54,7 +54,7 @@ dependencies {
     implementation "com.squareup.retrofit2:converter-gson:2.6.0"
 
     // Worker Manager
-    def work_version = "2.6.0"
+    def work_version = "2.7.0"
     implementation "androidx.work:work-runtime-ktx:$work_version"
     implementation "androidx.work:work-gcm:$work_version"
     implementation "androidx.work:work-multiprocess:$work_version"
@@ -63,5 +63,6 @@ dependencies {
     implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")
     implementation("androidx.navigation:navigation-ui-ktx:$nav_version")
     implementation "com.karumi:dexter:6.2.3"
+
     //implementation project(path: ':CordovaLib')
 }
