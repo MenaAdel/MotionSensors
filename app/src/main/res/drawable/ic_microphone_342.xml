@@ -1,0 +1,38 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="50dp"
+    android:height="50dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+  <path
+      android:pathData="M128,200.731c-44.849,0 -81.341,-36.489 -81.341,-81.341c0,-4.795 3.888,-8.68 8.68,-8.68c4.795,0 8.68,3.888 8.68,8.68C64.021,154.669 92.721,183.372 128,183.372c35.276,0 63.979,-28.703 63.979,-63.979c0,-4.795 3.885,-8.68 8.68,-8.68s8.68,3.888 8.68,8.68C209.341,164.242 172.849,200.731 128,200.731z"
+      android:strokeLineJoin="miter"
+      android:strokeWidth="2.8008"
+      android:fillColor="#DC1D1D"
+      android:fillType="nonZero"
+      android:strokeColor="#00000000"
+      android:strokeLineCap="butt"/>
+  <path
+      android:pathData="M128,172.079L128,172.079c-28.806,0 -52.375,-23.569 -52.375,-52.375L75.625,54.339C75.625,25.533 99.194,1.964 128,1.964l0,0c28.806,0 52.375,23.569 52.375,52.375l0,65.362C180.375,148.507 156.806,172.079 128,172.079z"
+      android:strokeLineJoin="miter"
+      android:strokeWidth="2.8008"
+      android:fillColor="#DC1D1D"
+      android:fillType="nonZero"
+      android:strokeColor="#00000000"
+      android:strokeLineCap="butt"/>
+  <path
+      android:pathData="M128,251.832c-4.795,0 -8.68,-3.885 -8.68,-8.68L119.32,194.253c0,-4.795 3.888,-8.68 8.68,-8.68c4.795,0 8.68,3.885 8.68,8.68l0,48.899C136.68,247.947 132.795,251.832 128,251.832z"
+      android:strokeLineJoin="miter"
+      android:strokeWidth="2.8008"
+      android:fillColor="#DC1D1D"
+      android:fillType="nonZero"
+      android:strokeColor="#00000000"
+      android:strokeLineCap="butt"/>
+  <path
+      android:pathData="M157.271,254.036L98.729,254.036c-4.795,0 -8.68,-3.885 -8.68,-8.68s3.888,-8.68 8.68,-8.68l58.54,0c4.795,0 8.68,3.885 8.68,8.68S162.066,254.036 157.271,254.036z"
+      android:strokeLineJoin="miter"
+      android:strokeWidth="2.8008"
+      android:fillColor="#DC1D1D"
+      android:fillType="nonZero"
+      android:strokeColor="#00000000"
+      android:strokeLineCap="butt"/>
+</vector>
